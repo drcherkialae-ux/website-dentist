@@ -1,0 +1,21 @@
+# Dépendances & builds
+node_modules/
+.next/
+out/
+dist/
+
+# Secrets (les vraies valeurs vivent en local + dans les dashboards Netlify/Render)
+.env
+.env.local
+.env*.local
+
+# Médias sources / originaux lourds — non nécessaires au déploiement
+# (les visuels web prêts sont déjà dans cabinet-cherki/public/media)
+source-assets/
+
+# Divers
+.DS_Store
+*.log
+
+# Outils locaux (Claude Code) — pas nécessaires au dépôt
+.claude/

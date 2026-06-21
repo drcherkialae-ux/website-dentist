@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  Design tokens — Cabinet Dentaire Dr. Alae Cherki                   */
+/*  Palette dérivée du logo : bleu roi + turquoise + blanc + sable     */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-night: #0a1a66; /* fond cinéma profond */
+  --color-navy: #16299c; /* bleu roi (logo) */
+  --color-ink: #0a1330; /* texte principal */
+  --color-teal: #26bccb; /* turquoise (arc du sourire) */
+  --color-teal-light: #7fe3ec; /* halo lumineux / parallaxe */
+  --color-sand: #efe9df; /* neutre chaud (murs du cabinet) */
+  --color-mist: #f6f8fc; /* surface claire */
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-display: var(--font-sora), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --animate-float: float 9s ease-in-out infinite;
+  --shadow-soft: 0 24px 60px -28px rgba(10, 19, 48, 0.28);
+  --shadow-lift: 0 40px 90px -40px rgba(10, 19, 48, 0.45);
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+html {
+  background: #ffffff;
+  /* Lenis gère le défilement fluide ; on désactive le natif. */
+  scroll-behavior: auto;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-teal);
+  color: #ffffff;
+}
+
+/* Halo / dégradé signature réutilisable */
+.bg-aurora {
+  background:
+    radial-gradient(60% 50% at 20% 10%, rgba(127, 227, 236, 0.18), transparent 70%),
+    radial-gradient(50% 60% at 90% 20%, rgba(38, 188, 203, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--color-night), var(--color-ink));
+}
+
+.text-gradient {
+  background: linear-gradient(120deg, var(--color-teal-light), var(--color-teal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Verre dépoli pour overlays / nav */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(10, 19, 48, 0.06);
+}
+
+/* Reflet lumineux discret qui balaie le logo (branding subtil) */
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 65%
+  );
+  transform: translateX(-130%);
+  animation: sheen 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sheen {
+  0%,
+  72% {
+    transform: translateX(-130%);
+  }
+  88%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+/* Lenis : recommandé par la lib */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Accessibilité : préférence "mouvement réduit"                      */
+/* ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

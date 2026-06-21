@@ -1,0 +1,9 @@
+# Déploiement du SITE (sous-dossier cabinet-cherki) — export statique Next.js.
+# Placé à la racine du dépôt pour que Netlify cible automatiquement le bon dossier,
+# sans configuration manuelle.
+[build]
+  command = "cd cabinet-cherki && npm install && npm run build"
+  publish = "cabinet-cherki/out"
+
+[build.environment]
+  NODE_VERSION = "20"

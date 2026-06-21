@@ -1,0 +1,21 @@
+# Déploiement du BACKEND (sous-dossier appointment-api) sur Render.
+# Render → New → Blueprint → sélectionner ce dépôt : tout est configuré,
+# il ne reste qu'à coller RESEND_API_KEY.
+services:
+  - type: web
+    name: cherki-appointment-api
+    runtime: node
+    rootDir: appointment-api
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: RESEND_API_KEY
+        sync: false
+      - key: TO_EMAIL
+        value: dr.cherkialae@gmail.com
+      - key: FROM_EMAIL
+        value: "Cabinet Dr. Alae Cherki <onboarding@resend.dev>"
+      - key: ALLOWED_ORIGIN
+        value: https://dr-cherkialae.netlify.app
