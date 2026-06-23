@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     "Dr Alae Cherki",
     "prothèse dentaire",
     "pédiatrie dentaire",
-    "Ouled Metaa",
+    "Boulevard Sahl Rhône Témara",
   ],
   authors: [{ name: SITE.brand.name }],
   openGraph: {
@@ -84,7 +84,7 @@ const jsonLd = {
   priceRange: "$$",
   address: {
     "@type": "PostalAddress",
-    streetAddress: "Ouled Metaa",
+    streetAddress: "Boulevard Sahl Rhône, Imm 28, App N°8 (2ᵉ étage)",
     addressLocality: "Témara",
     addressCountry: "MA",
   },

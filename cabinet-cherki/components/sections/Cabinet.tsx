@@ -30,15 +30,8 @@ const tiles: Tile[] = [
     src: "/media/soin-2.mp4",
     poster: "/media/soin-2.jpg",
     caption: "Technologie & confort",
-    span: "lg:col-span-5",
+    span: "lg:col-span-12",
     amount: 30,
-  },
-  {
-    kind: "image",
-    src: "/media/soin-2.jpg",
-    caption: "Un environnement immaculé",
-    span: "lg:col-span-7",
-    amount: -30,
   },
 ];
 

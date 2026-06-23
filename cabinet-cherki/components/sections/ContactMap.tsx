@@ -2,14 +2,14 @@ import { SITE } from "@/lib/site";
 
 const mapEmbed =
   "https://www.google.com/maps?q=" +
-  encodeURIComponent("Ouled Metaa, Témara, Maroc") +
-  "&z=14&output=embed";
+  encodeURIComponent("Boulevard Sahl Rhône, Témara, Maroc") +
+  "&z=16&output=embed";
 
 export default function ContactMap() {
   return (
     <div className="relative overflow-hidden rounded-[1.75rem] shadow-lift ring-1 ring-white/10">
       <iframe
-        title="Localisation du cabinet — Ouled Metaa, Témara"
+        title="Localisation du cabinet — Boulevard Sahl Rhône, Témara"
         src={mapEmbed}
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"

@@ -13,7 +13,7 @@ const {
 const CABINET = {
   name: "Cabinet Dentaire Dr. Alae Cherki",
   phone: "05 37 56 25 87",
-  address: "Ouled Metaa, Témara",
+  address: "Boulevard Sahl Rhône, Imm 28, App N°8 (2ᵉ étage), Témara",
   navy: "#16299c",
   teal: "#26bccb",
   ink: "#0a1330",

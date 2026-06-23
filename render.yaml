@@ -18,4 +18,4 @@ services:
       - key: FROM_EMAIL
         value: "Cabinet Dr. Alae Cherki <onboarding@resend.dev>"
       - key: ALLOWED_ORIGIN
-        value: https://dr-cherkialae.netlify.app
+        value: https://drcherkialae.netlify.app

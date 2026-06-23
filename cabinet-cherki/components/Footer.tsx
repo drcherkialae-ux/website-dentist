@@ -115,7 +115,7 @@ export default function Footer() {
           <span>
             © {new Date().getFullYear()} {SITE.brand.name}. Tous droits réservés.
           </span>
-          <span>Témara — Ouled Metaa, Maroc</span>
+          <span>Témara — Boulevard Sahl Rhône, Maroc</span>
         </div>
       </div>
     </footer>

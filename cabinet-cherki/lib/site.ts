@@ -41,8 +41,9 @@ export const SITE = {
     drPhoneTel: "+212687961441",
     whatsapp: "212687961441", // format international sans "+"
     instagram: "https://instagram.com/drcherkialae",
-    mapsUrl: "https://maps.apple/p/Rd8Z1s.gJUgx_T",
-    addressLine: "Ouled Metaa, Témara",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=Boulevard%20Sahl%20Rh%C3%B4ne%2C%20T%C3%A9mara%2C%20Maroc",
+    addressLine: "Boulevard Sahl Rhône, Imm 28, App N°8 (2ᵉ étage)",
     city: "Témara, Maroc",
   },
 
