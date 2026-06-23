@@ -14,7 +14,8 @@ const tiles: Tile[] = [
     src: "/media/soin-1.mp4",
     poster: "/media/soin-1.jpg",
     caption: "Salle de soin",
-    span: "lg:col-span-7",
+    // Vidéo paysage (16:9) → tuile large, demi-hauteur (colonne de gauche, haut)
+    span: "md:col-span-7 md:row-span-2",
     amount: 30,
   },
   {
@@ -22,7 +23,8 @@ const tiles: Tile[] = [
     src: "/media/attente.mp4",
     poster: "/media/soin-2.jpg",
     caption: "Salle d'attente",
-    span: "lg:col-span-5",
+    // Vidéo paysage (16:9) → tuile large, demi-hauteur (colonne de gauche, bas)
+    span: "md:col-span-7 md:row-span-2",
     amount: -30,
   },
   {
@@ -30,7 +32,8 @@ const tiles: Tile[] = [
     src: "/media/soin-2.mp4",
     poster: "/media/soin-2.jpg",
     caption: "Technologie & confort",
-    span: "lg:col-span-12",
+    // Vidéo portrait (9:16) → tuile étroite, pleine hauteur (colonne de droite)
+    span: "md:col-span-5 md:row-span-4",
     amount: 30,
   },
 ];
@@ -38,7 +41,7 @@ const tiles: Tile[] = [
 function TileMedia({ tile }: { tile: Tile }) {
   return (
     <Parallax amount={tile.amount} className="h-full">
-      <div className="group relative h-full min-h-[260px] overflow-hidden rounded-[1.75rem] shadow-soft ring-1 ring-ink/5">
+      <div className="group relative h-full min-h-[260px] overflow-hidden rounded-[1.75rem] shadow-soft ring-1 ring-ink/5 md:min-h-0">
         {tile.kind === "video" ? (
           <video
             autoPlay
@@ -47,7 +50,7 @@ function TileMedia({ tile }: { tile: Tile }) {
             playsInline
             preload="metadata"
             poster={tile.poster}
-            className="h-full w-full scale-105 object-cover transition-transform duration-[1.2s] group-hover:scale-110"
+            className="h-full w-full scale-105 object-cover transition-transform duration-[1.2s] group-hover:scale-110 md:scale-100 md:group-hover:scale-105"
           >
             <source src={tile.src} type="video/mp4" />
           </video>
@@ -57,7 +60,7 @@ function TileMedia({ tile }: { tile: Tile }) {
             alt={tile.caption}
             fill
             sizes="(max-width: 1024px) 90vw, 55vw"
-            className="scale-105 object-cover transition-transform duration-[1.2s] group-hover:scale-110"
+            className="scale-105 object-cover transition-transform duration-[1.2s] group-hover:scale-110 md:scale-100 md:group-hover:scale-105"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink/55 via-transparent to-transparent" />
@@ -94,7 +97,7 @@ export default function Cabinet() {
           </Reveal>
         </div>
 
-        <div className="mt-12 grid auto-rows-[minmax(260px,1fr)] grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="mt-12 grid grid-cols-1 gap-5 auto-rows-[minmax(260px,1fr)] md:grid-cols-12 md:grid-flow-row-dense md:auto-rows-[105px] lg:auto-rows-[185px]">
           {tiles.map((tile, i) => (
             <Reveal
               key={`${tile.caption}-${i}`}
