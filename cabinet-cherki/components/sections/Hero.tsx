@@ -13,6 +13,14 @@ import { SITE } from "@/lib/site";
 
 const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+/* Portrait responsive : le navigateur ne télécharge qu'UNE variante (~6-41 Ko) */
+const PORTRAIT_SIZES =
+  "(max-width: 640px) 92vw, (max-width: 1024px) 448px, 520px";
+const PORTRAIT_SRCSET = (ext: "avif" | "webp") =>
+  [480, 768, 1080]
+    .map((w) => `/media/hero-portrait-${w}.${ext} ${w}w`)
+    .join(", ");
+
 export default function Hero() {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
@@ -42,21 +50,18 @@ export default function Hero() {
       ref={ref}
       className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-aurora pt-24 pb-16 text-white md:pt-28"
     >
-      {/* Couche vidéo d'ambiance (très discrète) */}
+      {/* Couche d'ambiance (dégradés CSS uniquement — aucune vidéo) */}
       <motion.div
         style={reduce ? undefined : { y: bgY }}
         className="pointer-events-none absolute inset-0 -z-10"
       >
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="/media/soin-1.jpg"
-          className="h-full w-full object-cover opacity-25 blur-[1px]"
-        >
-          <source src="/media/hero-clinic.mp4" type="video/mp4" />
-        </video>
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(50% 40% at 20% 15%, rgba(38, 188, 203, 0.1), transparent 70%), radial-gradient(70% 50% at 80% 85%, rgba(11, 27, 51, 0.55), transparent 70%)",
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-night/70 via-ink/80 to-ink" />
       </motion.div>
 
@@ -124,17 +129,37 @@ export default function Hero() {
             style={reduce ? undefined : { y: portraitY }}
             className="relative aspect-[4/5] overflow-hidden rounded-[2rem] shadow-lift ring-1 ring-white/15"
           >
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              poster="/media/portrait-2.jpg"
-              aria-label={`${SITE.brand.doctor}, ${SITE.brand.role}`}
-              className="absolute inset-0 h-full w-full object-cover object-top"
+            {/* Lent zoom "respiration" pour garder la carte vivante sans vidéo */}
+            <motion.div
+              animate={reduce ? undefined : { scale: [1, 1.04, 1] }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0"
             >
-              <source src="/media/doctor-portrait.mp4" type="video/mp4" />
-            </video>
+              <picture>
+                <source
+                  type="image/avif"
+                  srcSet={PORTRAIT_SRCSET("avif")}
+                  sizes={PORTRAIT_SIZES}
+                />
+                <source
+                  type="image/webp"
+                  srcSet={PORTRAIT_SRCSET("webp")}
+                  sizes={PORTRAIT_SIZES}
+                />
+                <img
+                  src="/media/hero-portrait-768.webp"
+                  srcSet={PORTRAIT_SRCSET("webp")}
+                  sizes={PORTRAIT_SIZES}
+                  width={1080}
+                  height={1350}
+                  alt={`${SITE.brand.doctor}, ${SITE.brand.role}`}
+                  fetchPriority="high"
+                  loading="eager"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover object-top"
+                />
+              </picture>
+            </motion.div>
             <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
 
             {/* Carte flottante : le docteur au centre de la marque */}
