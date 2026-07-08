@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Reveal from "@/components/motion/Reveal";
 import Parallax from "@/components/motion/Parallax";
+import LazyVideo from "@/components/LazyVideo";
 
 type Tile = {
   caption: string;
@@ -12,7 +13,7 @@ const tiles: Tile[] = [
   {
     kind: "video",
     src: "/media/soin-1.mp4",
-    poster: "/media/soin-1.jpg",
+    poster: "/media/soin-1-poster.webp",
     caption: "Salle de soin",
     // Vidéo paysage (16:9) → tuile large, demi-hauteur (colonne de gauche, haut)
     span: "md:col-span-7 md:row-span-2",
@@ -21,7 +22,7 @@ const tiles: Tile[] = [
   {
     kind: "video",
     src: "/media/attente.mp4",
-    poster: "/media/soin-2.jpg",
+    poster: "/media/soin-2-poster.webp",
     caption: "Salle d'attente",
     // Vidéo paysage (16:9) → tuile large, demi-hauteur (colonne de gauche, bas)
     span: "md:col-span-7 md:row-span-2",
@@ -30,7 +31,7 @@ const tiles: Tile[] = [
   {
     kind: "video",
     src: "/media/soin-2.mp4",
-    poster: "/media/soin-2.jpg",
+    poster: "/media/soin-2-poster.webp",
     caption: "Technologie & confort",
     // Vidéo portrait (9:16) → tuile étroite, pleine hauteur (colonne de droite)
     span: "md:col-span-5 md:row-span-4",
@@ -43,17 +44,11 @@ function TileMedia({ tile }: { tile: Tile }) {
     <Parallax amount={tile.amount} className="h-full">
       <div className="group relative h-full min-h-[260px] overflow-hidden rounded-[1.75rem] shadow-soft ring-1 ring-ink/5 md:min-h-0">
         {tile.kind === "video" ? (
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
+          <LazyVideo
+            src={tile.src}
             poster={tile.poster}
             className="h-full w-full scale-105 object-cover transition-transform duration-[1.2s] group-hover:scale-110 md:scale-100 md:group-hover:scale-105"
-          >
-            <source src={tile.src} type="video/mp4" />
-          </video>
+          />
         ) : (
           <Image
             src={tile.src}

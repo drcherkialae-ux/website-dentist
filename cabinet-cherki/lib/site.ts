@@ -29,7 +29,7 @@ export const SITE = {
     intro:
       "Centre dentaire multidisciplinaire à Témara — expertise, soins et technologie avancée, dans un cadre profondément humain.",
     instagramHandle: "@drcherkialae",
-    logo: "/media/logo.png",
+    logo: "/media/logo-96.webp",
   },
 
   contact: {

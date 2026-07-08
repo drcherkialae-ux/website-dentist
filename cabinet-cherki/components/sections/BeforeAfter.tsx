@@ -68,7 +68,7 @@ export default function BeforeAfter() {
             className="relative aspect-[4/5] w-full overflow-hidden rounded-[1.75rem] shadow-lift ring-1 ring-ink/5"
           >
             <Image
-              src="/media/before-after.jpg"
+              src="/media/before-after-1152.webp"
               alt="Avant / après — blanchiment dentaire au cabinet Dr. Alae Cherki"
               fill
               sizes="(max-width: 1024px) 90vw, 45vw"
