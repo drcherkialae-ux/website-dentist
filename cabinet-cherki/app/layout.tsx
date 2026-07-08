@@ -26,7 +26,7 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
-const siteUrl = "https://www.cabinet-cherki.ma";
+const siteUrl = "https://drcherkialae.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
       {
         url: "/media/portrait-1.jpg",
         width: 1200,
-        height: 1600,
+        height: 2176,
         alt: SITE.brand.doctor,
       },
     ],
@@ -79,6 +79,7 @@ const jsonLd = {
   name: SITE.brand.name,
   description: SITE.brand.intro,
   image: `${siteUrl}/media/portrait-1.jpg`,
+  logo: `${siteUrl}/media/logo-512.png`,
   url: siteUrl,
   telephone: SITE.contact.cabinetPhoneTel,
   priceRange: "$$",
