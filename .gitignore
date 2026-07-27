@@ -12,6 +12,10 @@ dist/
 # Médias sources / originaux lourds — non nécessaires au déploiement
 # (les visuels web prêts sont déjà dans cabinet-cherki/public/media)
 source-assets/
+new assets/
+decouvrir le cabinet/
+before and after clients/
+reception background.png
 
 # Divers
 .DS_Store

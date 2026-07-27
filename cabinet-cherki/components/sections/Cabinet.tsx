@@ -1,71 +1,82 @@
-import Image from "next/image";
 import Reveal from "@/components/motion/Reveal";
-import Parallax from "@/components/motion/Parallax";
-import LazyVideo from "@/components/LazyVideo";
+import RoomTour, { type TourSlide } from "@/components/RoomTour";
+
+/* Formats 16:9 (2752 × 1536) — salles */
+const LANDSCAPE = { widths: [960, 1440, 1920], imgW: 2752, imgH: 1536 };
+/* Format portrait (1696 × 2528) — radio panoramique */
+const PORTRAIT = { widths: [640, 1080, 1440], imgW: 1696, imgH: 2528 };
 
 type Tile = {
-  caption: string;
+  title: string;
+  slides: TourSlide[];
+  widths: number[];
+  sizes: string;
+  imgW: number;
+  imgH: number;
   span: string;
-  amount: number;
-} & ({ kind: "video"; src: string; poster: string } | { kind: "image"; src: string });
+};
 
 const tiles: Tile[] = [
   {
-    kind: "video",
-    src: "/media/soin-1.mp4",
-    poster: "/media/soin-1-poster.webp",
-    caption: "Salle de soin",
-    // Vidéo paysage (16:9) → tuile large, demi-hauteur (colonne de gauche, haut)
+    title: "Salle d'attente",
+    ...LANDSCAPE,
+    sizes: "(max-width: 767px) 94vw, 55vw",
     span: "md:col-span-7 md:row-span-2",
-    amount: 30,
+    slides: [
+      { name: "salle-1", alt: "Salle d'attente du cabinet — vue d'ensemble", from: 1.08, to: 1.18, drift: -16 },
+      { name: "salle-2", alt: "Canapé en velours camel baigné de lumière", from: 1.06, to: 1.16, drift: 14 },
+      { name: "salle-3", alt: "Fauteuil moutarde et table basse du salon d'accueil", from: 1.1, to: 1.2, drift: -12 },
+      { name: "salle-4", alt: "Bougainvillier et ambiance feutrée de la salle d'attente", from: 1.06, to: 1.17, drift: 12 },
+    ],
   },
   {
-    kind: "video",
-    src: "/media/attente.mp4",
-    poster: "/media/soin-2-poster.webp",
-    caption: "Salle d'attente",
-    // Vidéo paysage (16:9) → tuile large, demi-hauteur (colonne de gauche, bas)
-    span: "md:col-span-7 md:row-span-2",
-    amount: -30,
-  },
-  {
-    kind: "video",
-    src: "/media/soin-2.mp4",
-    poster: "/media/soin-2-poster.webp",
-    caption: "Technologie & confort",
-    // Vidéo portrait (9:16) → tuile étroite, pleine hauteur (colonne de droite)
+    title: "Radiologie panoramique",
+    ...PORTRAIT,
+    sizes: "(max-width: 767px) 94vw, 40vw",
     span: "md:col-span-5 md:row-span-4",
-    amount: 30,
+    slides: [
+      { name: "radio-1", alt: "Radio panoramique NewTom GO — vue d'ensemble", from: 1.08, to: 1.18, drift: -12 },
+      { name: "radio-2", alt: "Bras de la radio panoramique NewTom GO", from: 1.06, to: 1.16, drift: 12 },
+      { name: "radio-3", alt: "Support de positionnement du patient", from: 1.1, to: 1.2, drift: -10 },
+      { name: "radio-4", alt: "Console de commande de la radiographie", from: 1.06, to: 1.16, drift: 10 },
+    ],
+  },
+  {
+    title: "Salle de soin 1",
+    ...LANDSCAPE,
+    sizes: "(max-width: 767px) 94vw, 55vw",
+    span: "md:col-span-7 md:row-span-2",
+    slides: [
+      { name: "soin-a-1", alt: "Salle de soin — vue d'ensemble lumineuse", from: 1.08, to: 1.18, drift: 14 },
+      { name: "soin-a-2", alt: "Fauteuil de soin et écran de contrôle", from: 1.06, to: 1.16, drift: -14 },
+      { name: "soin-a-3", alt: "Salle de soin vue en plongée", from: 1.1, to: 1.2, drift: 12 },
+      { name: "soin-a-4", alt: "Instruments de l'unité dentaire", from: 1.06, to: 1.17, drift: -12 },
+    ],
+  },
+  {
+    title: "Salle de soin 2",
+    ...LANDSCAPE,
+    sizes: "(max-width: 767px) 94vw, 55vw",
+    span: "md:col-span-7 md:row-span-2",
+    slides: [
+      { name: "soin-b-1", alt: "Seconde salle de soin — vue d'ensemble", from: 1.08, to: 1.18, drift: -14 },
+      { name: "soin-b-2", alt: "Fauteuil de soin et rangements", from: 1.06, to: 1.16, drift: 14 },
+      { name: "soin-b-3", alt: "Fauteuil de la seconde salle vu en plongée", from: 1.1, to: 1.2, drift: -12 },
+      { name: "soin-b-4", alt: "Tablette d'instruments de l'unité de soin", from: 1.06, to: 1.17, drift: 12 },
+    ],
+  },
+  {
+    title: "Stérilisation",
+    ...LANDSCAPE,
+    sizes: "(max-width: 767px) 94vw, 40vw",
+    span: "md:col-span-5 md:row-span-2",
+    slides: [
+      { name: "sterile-1", alt: "Autoclave de stérilisation ouvert", from: 1.08, to: 1.18, drift: 12 },
+      { name: "sterile-2", alt: "Panneau de commande de l'autoclave", from: 1.06, to: 1.16, drift: -12 },
+      { name: "sterile-3", alt: "Contrôle du cycle de stérilisation", from: 1.1, to: 1.19, drift: 10 },
+    ],
   },
 ];
-
-function TileMedia({ tile }: { tile: Tile }) {
-  return (
-    <Parallax amount={tile.amount} className="h-full">
-      <div className="group relative h-full min-h-[260px] overflow-hidden rounded-[1.75rem] shadow-soft ring-1 ring-ink/5 md:min-h-0">
-        {tile.kind === "video" ? (
-          <LazyVideo
-            src={tile.src}
-            poster={tile.poster}
-            className="h-full w-full scale-105 object-cover transition-transform duration-[1.2s] group-hover:scale-110 md:scale-100 md:group-hover:scale-105"
-          />
-        ) : (
-          <Image
-            src={tile.src}
-            alt={tile.caption}
-            fill
-            sizes="(max-width: 1024px) 90vw, 55vw"
-            className="scale-105 object-cover transition-transform duration-[1.2s] group-hover:scale-110 md:scale-100 md:group-hover:scale-105"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/55 via-transparent to-transparent" />
-        <span className="glass absolute bottom-4 left-4 rounded-full px-4 py-1.5 text-xs font-medium text-white">
-          {tile.caption}
-        </span>
-      </div>
-    </Parallax>
-  );
-}
 
 export default function Cabinet() {
   return (
@@ -92,14 +103,26 @@ export default function Cabinet() {
           </Reveal>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-5 auto-rows-[minmax(260px,1fr)] md:grid-cols-12 md:grid-flow-row-dense md:auto-rows-[105px] lg:auto-rows-[185px]">
+        <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-12 md:grid-flow-row-dense md:auto-rows-[105px] lg:auto-rows-[185px]">
           {tiles.map((tile, i) => (
             <Reveal
-              key={`${tile.caption}-${i}`}
+              key={tile.title}
               delay={(i % 2) * 0.1}
               className={`${tile.span} h-full`}
             >
-              <TileMedia tile={tile} />
+              <RoomTour
+                slides={tile.slides}
+                title={tile.title}
+                widths={tile.widths}
+                sizes={tile.sizes}
+                imgW={tile.imgW}
+                imgH={tile.imgH}
+                className={`h-full rounded-[1.75rem] shadow-soft ring-1 ring-ink/5 ${
+                  tile.span.includes("row-span-4")
+                    ? "min-h-[420px]"
+                    : "min-h-[280px]"
+                }`}
+              />
             </Reveal>
           ))}
         </div>

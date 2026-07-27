@@ -4,6 +4,12 @@ import Parallax from "@/components/motion/Parallax";
 import { RdvButton } from "@/components/cta";
 import { SITE } from "@/lib/site";
 
+/* Portrait studio du docteur (1856 × 2304) */
+const PORTRAIT_WIDTHS = [640, 1080, 1440];
+const PORTRAIT_SIZES = "(max-width: 1024px) 90vw, 45vw";
+const portraitSrcSet = (ext: "avif" | "webp") =>
+  PORTRAIT_WIDTHS.map((w) => `/media/doctor-portrait-${w}.${ext} ${w}w`).join(", ");
+
 const chips = [
   "Approche multidisciplinaire",
   "Technologie fläsh",
@@ -20,13 +26,21 @@ export default function Doctor() {
           <div className="pointer-events-none absolute -left-10 -top-10 h-72 w-72 rounded-full bg-teal/15 blur-[90px]" />
           <Parallax amount={40}>
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] shadow-soft ring-1 ring-ink/5">
-              <Image
-                src="/media/working-pc.jpg"
-                alt={`${SITE.brand.doctor} au cabinet`}
-                fill
-                sizes="(max-width: 1024px) 90vw, 45vw"
-                className="object-cover"
-              />
+              <picture>
+                <source type="image/avif" srcSet={portraitSrcSet("avif")} sizes={PORTRAIT_SIZES} />
+                <source type="image/webp" srcSet={portraitSrcSet("webp")} sizes={PORTRAIT_SIZES} />
+                <img
+                  src="/media/doctor-portrait-1080.webp"
+                  srcSet={portraitSrcSet("webp")}
+                  sizes={PORTRAIT_SIZES}
+                  width={1440}
+                  height={1788}
+                  alt={SITE.brand.doctor}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </picture>
             </div>
           </Parallax>
 
