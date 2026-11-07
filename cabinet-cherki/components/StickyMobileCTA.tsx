@@ -1,48 +1,67 @@
 "use client";
 
-import { useState } from "react";
-import { useLenis } from "lenis/react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import AnchorLink from "./AnchorLink";
+import { buttonStyles } from "./ui/Button";
+import { Phone } from "./ui/icons";
 import { SITE } from "@/lib/site";
 
-/** Barre de conversion fixe en bas d'écran (mobile uniquement). */
+/**
+ * Barre d'outils inférieure (mobile) en Liquid Glass : l'action principale
+ * reste à portée de pouce. Masquée sur la photo d'accueil (qui a ses propres
+ * boutons) et dès que le formulaire de rendez-vous est à l'écran.
+ */
 export default function StickyMobileCTA() {
+  const reduce = useReducedMotion();
   const [visible, setVisible] = useState(false);
 
-  useLenis(({ scroll }: { scroll: number }) => {
-    setVisible(scroll > 420);
-  });
+  useEffect(() => {
+    const hero = document.getElementById("top");
+    const rdv = document.getElementById("rendez-vous");
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const pastHero = window.scrollY > (hero?.offsetHeight ?? 600) * 0.7;
+      const rdvTop = rdv?.getBoundingClientRect().top ?? Infinity;
+      setVisible(pastHero && rdvTop > window.innerHeight * 0.85);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    frame = requestAnimationFrame(update);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ y: 90, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 90, opacity: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: 28 }}
+          transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+          className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(12px,env(safe-area-inset-bottom))] md:hidden"
         >
-          <div className="glass-light mx-3 mb-3 grid grid-cols-[1fr_auto] gap-2 rounded-2xl p-2 shadow-lift">
+          <div className="glass mx-auto flex max-w-[480px] items-center gap-1.5 rounded-full p-1.5">
             <AnchorLink
               href="#rendez-vous"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-teal text-sm font-semibold tracking-tight text-white"
+              className={buttonStyles("prominent", "large", "flex-1")}
             >
               Prendre rendez-vous
             </AnchorLink>
             <a
               href={`tel:${SITE.contact.cabinetPhoneTel}`}
-              aria-label="Appeler le cabinet"
-              className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-ink/10 text-ink"
+              aria-label={`Appeler le cabinet au ${SITE.contact.cabinetPhoneDisplay}`}
+              className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-fill-tertiary text-label transition-transform duration-200 active:scale-95"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M6.6 10.8a13.4 13.4 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24c1.1.36 2.3.56 3.5.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.3a1 1 0 0 1 1 1c0 1.2.2 2.4.56 3.5a1 1 0 0 1-.24 1l-2.2 2.3Z"
-                  fill="currentColor"
-                />
-              </svg>
+              <Phone className="h-5 w-5" />
             </a>
           </div>
         </motion.div>

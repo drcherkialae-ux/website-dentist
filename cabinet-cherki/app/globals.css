@@ -1,226 +1,518 @@
 @import "tailwindcss";
 
-/* ------------------------------------------------------------------ */
-/*  Design tokens — Cabinet Dentaire Dr. Alae Cherki                   */
-/*  Palette dérivée du logo : bleu roi + turquoise + blanc + sable     */
-/* ------------------------------------------------------------------ */
+/* dark: suit le thème choisi (data-theme), pas seulement l’appareil. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ================================================================== */
+/*  Système de design — Cabinet Dentaire Dr. Alae Cherki               */
+/*  Fondé sur les Human Interface Guidelines d'Apple :                 */
+/*  · couleurs sémantiques (clair / sombre / contraste élevé)          */
+/*  · une seule teinte d'action, la couleur de marque reste décorative */
+/*  · texte en police système (SF Pro / Inter), titres en Fraunces     */
+/*  · matériau « Liquid Glass » réservé à la navigation et aux         */
+/*    contrôles, jamais au contenu                                     */
+/* ================================================================== */
+
 @theme {
-  --color-night: #0a1a66; /* fond cinéma profond */
-  --color-navy: #16299c; /* bleu roi (logo) */
-  --color-ink: #0a1330; /* texte principal */
-  --color-teal: #26bccb; /* turquoise (arc du sourire) */
-  --color-teal-light: #7fe3ec; /* halo lumineux / parallaxe */
-  --color-sand: #efe9df; /* neutre chaud (murs du cabinet) */
-  --color-mist: #f6f8fc; /* surface claire */
-  --color-abyss: #060b1a; /* navy quasi noir — hero luxe */
-  --color-slate-navy: #27384c; /* fond studio du portrait */
-  --color-champagne: #d9bd92; /* or champagne (salle d'attente) */
-  --color-champagne-deep: #b6935f;
+  /* Pas de palette Tailwind par défaut : uniquement des couleurs sémantiques. */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-abyss: #060b1a;
+  /* Champagne : accent d'identité, uniquement sur fond sombre (11:1). */
+  --color-champagne: #dcc49e;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", sans-serif;
-  --font-display: var(--font-sora), var(--font-inter), ui-sans-serif, sans-serif;
-  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  /* Espacements en px : le texte suit la taille de texte choisie par la
+     personne (rem / Dynamic Type), la mise en page reste stable. */
+  --spacing: 4px;
 
-  --animate-float: float 9s ease-in-out infinite;
-  --shadow-soft: 0 24px 60px -28px rgba(10, 19, 48, 0.28);
-  --shadow-lift: 0 40px 90px -40px rgba(10, 19, 48, 0.45);
+  --font-sans: -apple-system, BlinkMacSystemFont, var(--font-inter),
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Titres : Fraunces (tailles optiques), la voix du cabinet. Le texte
+     courant reste en police système. */
+  --font-display: var(--font-fraunces), "Iowan Old Style", "Palatino Linotype",
+    Georgia, serif;
+
+  --container-page: 1200px;
+  --container-reading: 680px;
+
+  /* Rayons concentriques */
+  --radius-tile: 28px;
+  --radius-card: 22px;
+  --radius-field: 12px;
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Courbes franches : les courbes CSS natives manquent de nerf. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* Styles de texte (équivalents des « text styles » iOS, 1rem = 17 px) */
+  --text-caption2: 0.6471rem;
+  --text-caption2--line-height: 1.18;
+  --text-caption2--letter-spacing: 0.006em;
+  --text-caption: 0.7059rem;
+  --text-caption--line-height: 1.333;
+  --text-caption--letter-spacing: 0em;
+  --text-footnote: 0.7647rem;
+  --text-footnote--line-height: 1.385;
+  --text-footnote--letter-spacing: -0.003em;
+  --text-subheadline: 0.8824rem;
+  --text-subheadline--line-height: 1.34;
+  --text-subheadline--letter-spacing: -0.009em;
+  --text-callout: 0.9412rem;
+  --text-callout--line-height: 1.4;
+  --text-callout--letter-spacing: -0.011em;
+  --text-body: 1rem;
+  --text-body--line-height: 1.47;
+  --text-body--letter-spacing: -0.013em;
+  --text-headline: 1rem;
+  --text-headline--line-height: 1.3;
+  --text-headline--letter-spacing: -0.013em;
+  --text-headline--font-weight: 600;
+  --text-title3: 1.1765rem;
+  --text-title3--line-height: 1.25;
+  --text-title3--letter-spacing: -0.016em;
+  --text-title3--font-weight: 600;
+  --text-title2: 1.2941rem;
+  --text-title2--line-height: 1.27;
+  --text-title2--letter-spacing: -0.017em;
+  --text-title2--font-weight: 700;
+  --text-title1: 1.6471rem;
+  --text-title1--line-height: 1.2;
+  --text-title1--letter-spacing: -0.019em;
+  --text-title1--font-weight: 700;
+  --text-lead: clamp(1.1765rem, 1.05rem + 0.45vw, 1.3529rem);
+  --text-lead--line-height: 1.42;
+  --text-lead--letter-spacing: -0.016em;
+  /* Titres d'affichage (avec font-display) : plafonnés en vw pour rester
+     lisibles même avec les très grandes tailles de texte d'accessibilité. */
+  /* Titres des mises en page à deux colonnes */
+  --text-display: min(clamp(2rem, 1.25rem + 2.2vw, 3rem), 9.4vw);
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.015em;
+  --text-display--font-weight: 400;
+  --text-large-title: min(clamp(2.15rem, 1.3rem + 3.1vw, 3.8rem), 9.8vw);
+  --text-large-title--line-height: 1.05;
+  --text-large-title--letter-spacing: -0.018em;
+  --text-large-title--font-weight: 400;
+  --text-hero: min(clamp(3.1rem, 1.6rem + 6.2vw, 6.6rem), 13.5vw);
+  --text-hero--line-height: 0.98;
+  --text-hero--letter-spacing: -0.022em;
+  --text-hero--font-weight: 400;
 }
 
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
+/* Les utilitaires pointent directement vers les variables sémantiques. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-grouped: var(--bg-grouped);
+  --color-grouped-secondary: var(--bg-grouped-secondary);
+  --color-label: var(--label);
+  --color-label-secondary: var(--label-secondary);
+  --color-label-tertiary: var(--label-tertiary);
+  --color-separator: var(--separator);
+  --color-separator-opaque: var(--separator-opaque);
+  --color-fill: var(--fill);
+  --color-fill-secondary: var(--fill-secondary);
+  --color-fill-tertiary: var(--fill-tertiary);
+  --color-fill-quaternary: var(--fill-quaternary);
+  --color-tint: var(--tint);
+  --color-tint-fill: var(--tint-fill);
+  --color-tint-fill-hover: var(--tint-fill-hover);
+  --color-tint-soft: var(--tint-soft);
+  --color-on-tint: #ffffff;
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-red: var(--red);
+  --color-red-fill: var(--red-fill);
+  --color-red-soft: var(--red-soft);
+  --color-green: var(--green);
+  --color-orange: var(--orange);
+  --color-field: var(--field-bg);
+  --color-field-border: var(--field-border);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Couleurs sémantiques                                               */
+/*  Contrastes vérifiés : texte ≥ 4,5:1 sur les fonds où il apparaît.  */
+/* ------------------------------------------------------------------ */
+:root {
+  color-scheme: light dark;
+
+  --bg: #ffffff;
+  --bg-secondary: #f5f5f7;
+  --bg-tertiary: #ffffff;
+  --bg-grouped: #f5f5f7;
+  --bg-grouped-secondary: #ffffff;
+
+  --label: #1d1d1f;
+  --label-secondary: #6e6e73; /* 5,1:1 sur blanc */
+  --label-tertiary: #86868b; /* éléments non essentiels uniquement */
+
+  --separator: rgb(60 60 67 / 0.16);
+  --separator-opaque: #d2d2d7;
+
+  --fill: rgb(120 120 128 / 0.2);
+  --fill-secondary: rgb(120 120 128 / 0.16);
+  --fill-tertiary: rgb(118 118 128 / 0.12);
+  --fill-quaternary: rgb(116 116 128 / 0.08);
+
+  /* Teinte d'action (turquoise du logo, assombri pour le contraste) :
+     réservée aux éléments interactifs. */
+  --tint: #00788c; /* 5,2:1 sur blanc */
+  --tint-fill: #00788c; /* libellé blanc 5,2:1 */
+  --tint-fill-hover: #006b7d;
+  --tint-soft: rgb(0 120 140 / 0.1);
+
+  /* Bleu roi du logo : identité, pictogrammes décoratifs. */
+  --brand: #16299c;
+  --brand-soft: rgb(22 41 156 / 0.08);
+
+  --red: #d70015;
+  --red-fill: #d70015;
+  --red-soft: rgb(215 0 21 / 0.08);
+  --green: #34c759;
+  --orange: #ff8d28;
+
+  --field-bg: #ffffff;
+  --field-border: #d2d2d7;
+
+  /* Liquid Glass — variante « regular » */
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --glass-rim: rgb(255 255 255 / 0.7);
+  --glass-shadow: 0 12px 32px -10px rgb(0 0 0 / 0.18), 0 1px 3px rgb(0 0 0 / 0.06);
+  --edge-tint: rgb(255 255 255 / 0.55);
+}
+
+/* Sombre : thème posé sur <html data-theme> avant l’affichage (réglage de
+   l’appareil par défaut, ou choix de la personne via le bouton soleil/lune). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-secondary: #1c1c1e;
+  --bg-tertiary: #2c2c2e;
+  --bg-grouped: #000000;
+  --bg-grouped-secondary: #1c1c1e;
+
+  --label: #f5f5f7;
+  --label-secondary: #a1a1a6; /* 6,6:1 sur #1c1c1e */
+  --label-tertiary: #6e6e73;
+
+  --separator: rgb(84 84 88 / 0.6);
+  --separator-opaque: #38383a;
+
+  --fill: rgb(120 120 128 / 0.36);
+  --fill-secondary: rgb(120 120 128 / 0.32);
+  --fill-tertiary: rgb(118 118 128 / 0.24);
+  --fill-quaternary: rgb(116 116 128 / 0.18);
+
+  --tint: #26bccb; /* turquoise du logo, 7,4:1 sur #1c1c1e */
+  --tint-fill: #007f96; /* libellé blanc 4,7:1 */
+  --tint-fill-hover: #008ba4;
+  --tint-soft: rgb(38 188 203 / 0.16);
+
+  --brand: #8c9bff;
+  --brand-soft: rgb(140 155 255 / 0.14);
+
+  --red: #ff4245;
+  --red-fill: #d70015;
+  --red-soft: rgb(255 66 69 / 0.14);
+  --green: #30d158;
+  --orange: #ff9230;
+
+  --field-bg: #2c2c2e;
+  --field-border: #48484a;
+
+  --glass-bg: rgb(38 38 40 / 0.7);
+  --glass-rim: rgb(255 255 255 / 0.14);
+  --glass-shadow: 0 12px 32px -10px rgb(0 0 0 / 0.7), 0 1px 3px rgb(0 0 0 / 0.4);
+  --edge-tint: rgb(0 0 0 / 0.5);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Contraste élevé (réglage « Augmenter le contraste ») */
+@media (prefers-contrast: more) {
+  :root {
+    --label: #000000;
+    --label-secondary: #3a3a3c;
+    --label-tertiary: #636366;
+    --separator: rgb(60 60 67 / 0.45);
+    --separator-opaque: #8e8e93;
+    --tint: #00606f;
+    --tint-fill: #00606f;
+    --tint-fill-hover: #00525f;
+    --brand: #0f1f7a;
+    --field-border: #8e8e93;
+    --glass-bg: rgb(255 255 255 / 0.94);
   }
-  50% {
-    transform: translateY(-12px);
+}
+@media (prefers-contrast: more) {
+  :root[data-theme="dark"] {
+    --label: #ffffff;
+    --label-secondary: #d1d1d6;
+    --label-tertiary: #aeaeb2;
+    --separator: rgb(160 160 168 / 0.7);
+    --separator-opaque: #8e8e93;
+    --tint: #5fe0ec;
+    --tint-fill: #006b7d;
+    --tint-fill-hover: #007a8e;
+    --brand: #b4beff;
+    --field-border: #8e8e93;
+    --glass-bg: rgb(28 28 30 / 0.95);
+  }
+}
+
+/* Sections toujours sombres (scène 3D des soins) : mêmes valeurs que le
+   mode sombre, quel que soit le réglage de l'appareil. */
+.scheme-dark {
+  color-scheme: dark;
+  --label: #f5f5f7;
+  --label-secondary: #a1a1a6; /* 7,6:1 sur abyss */
+  --label-tertiary: #6e6e73;
+  --separator: rgb(84 84 88 / 0.6);
+  --separator-opaque: #38383a;
+  --fill: rgb(120 120 128 / 0.36);
+  --fill-secondary: rgb(120 120 128 / 0.32);
+  --fill-tertiary: rgb(118 118 128 / 0.24);
+  --tint: #26bccb; /* 8,6:1 sur abyss */
+  --tint-fill: #007f96;
+  --tint-fill-hover: #008ba4;
+  --tint-soft: rgb(38 188 203 / 0.16);
+  --red: #ff4245;
+  --red-fill: #d70015;
+  --red-soft: rgb(255 66 69 / 0.14);
+}
+@media (prefers-contrast: more) {
+  .scheme-dark {
+    --label: #ffffff;
+    --label-secondary: #d1d1d6;
+    --label-tertiary: #aeaeb2;
+    --separator: rgb(160 160 168 / 0.7);
+    --tint: #5fe0ec;
+    --tint-fill: #006b7d;
+    --tint-fill-hover: #007a8e;
   }
 }
 
 /* ------------------------------------------------------------------ */
 /*  Base                                                               */
 /* ------------------------------------------------------------------ */
-html {
-  background: #ffffff;
-  /* Lenis gère le défilement fluide ; on désactive le natif. */
-  scroll-behavior: auto;
-}
-
-body {
-  background: #ffffff;
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  overflow-x: hidden;
-}
-
-::selection {
-  background: var(--color-teal);
-  color: #ffffff;
-}
-
-/* Halo / dégradé signature réutilisable */
-.bg-aurora {
-  background:
-    radial-gradient(60% 50% at 20% 10%, rgba(127, 227, 236, 0.18), transparent 70%),
-    radial-gradient(50% 60% at 90% 20%, rgba(38, 188, 203, 0.16), transparent 70%),
-    linear-gradient(180deg, var(--color-night), var(--color-ink));
-}
-
-.text-gradient {
-  background: linear-gradient(120deg, var(--color-teal-light), var(--color-teal));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Verre dépoli pour overlays / nav */
-.glass {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.glass-light {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid rgba(10, 19, 48, 0.06);
-}
-
-/* Reflet lumineux discret qui balaie le logo (branding subtil) */
-.sheen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.35) 50%,
-    transparent 65%
-  );
-  transform: translateX(-130%);
-  animation: sheen 7s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes sheen {
-  0%,
-  72% {
-    transform: translateX(-130%);
+@layer base {
+  html {
+    /* 17 px : taille « Body » par défaut d'iOS (respecte le réglage de
+       taille de police du navigateur). */
+    font-size: 106.25%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-padding-top: 96px;
+    background: var(--bg);
   }
-  88%,
-  100% {
-    transform: translateX(130%);
+
+  /* iPhone / iPad : la taille du texte suit Dynamic Type. */
+  @supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
+    html {
+      font: -apple-system-body;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--label);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    letter-spacing: var(--text-body--letter-spacing);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--tint) 26%, transparent);
+  }
+
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--tint) 75%, transparent);
+    outline-offset: 3px;
   }
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hero luxe                                                          */
+/*  Matériaux                                                          */
+/* ------------------------------------------------------------------ */
+@layer components {
+  /* Liquid Glass « regular » : barre de navigation, menus, barre d'outils. */
+  .glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    box-shadow:
+      inset 0 0 0 0.5px var(--glass-rim),
+      inset 0 1px 0 0 var(--glass-rim),
+      var(--glass-shadow);
+  }
+
+  /* Liquid Glass « clear » : contrôles posés sur des photos. Le voile
+     sombre intégré joue le rôle du calque d'atténuation recommandé. */
+  .glass-clear {
+    background: rgb(12 14 20 / 0.28);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+    box-shadow:
+      inset 0 0 0 0.5px rgb(255 255 255 / 0.3),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.22),
+      0 8px 24px -10px rgb(0 0 0 / 0.45);
+  }
+
+  /* Effet de bord de défilement (« soft ») sous la barre flottante. */
+  .scroll-edge {
+    background: linear-gradient(
+      to bottom,
+      var(--edge-tint),
+      transparent
+    );
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent);
+    mask-image: linear-gradient(to bottom, #000 35%, transparent);
+  }
+
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+
+/* Réduire la transparence / navigateurs sans flou d'arrière-plan */
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--bg-secondary);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-clear {
+    background: rgb(28 28 30 / 0.94);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .scroll-edge {
+    display: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--bg-secondary);
+  }
+  .glass-clear {
+    background: rgb(28 28 30 / 0.94);
+  }
+}
+@media (prefers-contrast: more) {
+  .glass {
+    box-shadow:
+      inset 0 0 0 1px var(--separator-opaque),
+      var(--glass-shadow);
+  }
+  .glass-clear {
+    background: rgb(0 0 0 / 0.75);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.65);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Animations                                                         */
+/*  En CSS : visibles dès le premier rendu, sans attendre JavaScript.  */
 /* ------------------------------------------------------------------ */
 
-/* Fond du hero : navy profond, halo studio derrière le portrait */
-.bg-hero-lux {
-  background:
-    radial-gradient(52% 60% at 30% 42%, rgba(39, 56, 76, 0.85), transparent 72%),
-    radial-gradient(40% 45% at 88% 20%, rgba(38, 188, 203, 0.07), transparent 70%),
-    linear-gradient(168deg, #0c1730 0%, var(--color-abyss) 58%, #05080f 100%);
+/* Entrée de l'accueil (décalage via --enter-delay) */
+@keyframes enter {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+.enter {
+  animation: enter 0.8s var(--ease-out) both;
+  animation-delay: var(--enter-delay, 0s);
 }
 
-/* Grain photographique très léger — texture premium sans poids réseau */
-.grain::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+/* Accueil lié au défilement : il suit le geste. Le reste du contenu ne
+   « s'anime » pas à l'apparition : il est simplement là. Sans prise en
+   charge (ou avec « Réduire les animations »), l'accueil reste immobile. */
+@keyframes hero-zoom {
+  to {
+    scale: 1.08;
+  }
+}
+@keyframes hero-fade {
+  to {
+    opacity: 0;
+    translate: 0 -56px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .hero {
+      view-timeline: --hero block;
+    }
+    .hero-media {
+      animation: hero-zoom linear both;
+      animation-timeline: --hero;
+      animation-range: exit 0% exit 100%;
+    }
+    .hero-copy {
+      animation: hero-fade linear both;
+      animation-timeline: --hero;
+      animation-range: exit 0% exit 55%;
+    }
+  }
 }
 
-/* Filet doré sous l'eyebrow */
-.hairline-champagne {
-  background: linear-gradient(
-    90deg,
-    var(--color-champagne) 0%,
-    rgba(217, 189, 146, 0.35) 55%,
-    transparent 100%
-  );
+/* Minuteur de l'indicateur de page (temps avant la vue suivante) */
+@keyframes page-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
-/* Boutons hero : reflet qui balaie au survol */
-.btn-sheen {
-  position: relative;
-  overflow: hidden;
-}
-.btn-sheen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    110deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.55) 50%,
-    transparent 70%
-  );
-  transform: translateX(-140%) skewX(-12deg);
-  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-  pointer-events: none;
-}
-.btn-sheen:hover::after {
-  transform: translateX(140%) skewX(-12deg);
-}
-
-/* Loader luxe : anneau champagne rotatif */
-@keyframes lux-spin {
+/* Indicateur d'activité à rayons */
+@keyframes activity-spin {
   to {
     transform: rotate(360deg);
   }
 }
-.lux-ring {
-  border-radius: 9999px;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    rgba(217, 189, 146, 0.9) 18%,
-    transparent 40%
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 1.5px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 1.5px));
-  animation: lux-spin 1.6s linear infinite;
+.activity-indicator {
+  animation: activity-spin 0.8s steps(8) infinite;
 }
 
-@keyframes lux-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-.lux-pulse {
-  animation: lux-pulse 2.4s ease-in-out infinite;
-}
-
-/* Lenis : recommandé par la lib */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-.lenis.lenis-stopped {
-  overflow: clip;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Accessibilité : préférence "mouvement réduit"                      */
-/* ------------------------------------------------------------------ */
+/* Réduire les animations */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -229,5 +521,10 @@ html.lenis body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Un indicateur d'activité immobile ferait croire à un blocage. */
+  .activity-indicator {
+    animation-duration: 0.8s !important;
+    animation-iteration-count: infinite !important;
   }
 }

@@ -9,7 +9,23 @@ export type Service = {
   name: string;
   short: string;
   description: string;
+  /** Ce que montre la dent 3D à cette étape. */
+  focus?: string;
   emergency?: boolean;
+};
+
+export type HoursItem = {
+  label: string;
+  time: string;
+  days: number[];
+  open?: number;
+  close?: number;
+};
+
+export type ApproachItem = {
+  icon: "specialites" | "technologie" | "hygiene" | "ecoute";
+  title: string;
+  text: string;
 };
 
 export type Review = {
@@ -17,6 +33,8 @@ export type Review = {
   city: string;
   text: string;
   service: string;
+  /** Mis en avant en grand, en tête des avis. */
+  featured?: boolean;
 };
 
 export const SITE = {
@@ -48,11 +66,14 @@ export const SITE = {
   },
 
   hours: {
+    /** Fuseau du cabinet : sert à afficher « Ouvert / Fermé » en direct. */
+    timeZone: "Africa/Casablanca",
+    /** `days` : 0 = dimanche … 6 = samedi. `open`/`close` en heures. */
     items: [
-      { days: "Lundi – Vendredi", time: "9h – 19h" },
-      { days: "Samedi", time: "9h – 14h" },
-      { days: "Dimanche", time: "Fermé" },
-    ],
+      { label: "Lundi – Vendredi", time: "9h – 19h", days: [1, 2, 3, 4, 5], open: 9, close: 19 },
+      { label: "Samedi", time: "9h – 14h", days: [6], open: 9, close: 14 },
+      { label: "Dimanche", time: "Fermé", days: [0] },
+    ] as HoursItem[],
     emergency: "Urgences 24h/24 — en cas de douleur",
   },
 
@@ -79,6 +100,7 @@ export const SITE = {
       short: "Un bilan complet et personnalisé de votre santé bucco-dentaire.",
       description:
         "Examen approfondi, diagnostic clair et plan de traitement sur-mesure, expliqué pas à pas. Prévenir avant de soigner.",
+      focus: "Imagerie et diagnostic",
     },
     {
       id: "esthetique",
@@ -86,6 +108,7 @@ export const SITE = {
       short: "Un sourire harmonieux, lumineux et naturel.",
       description:
         "Blanchiment professionnel fläsh, facettes et soins esthétiques pour révéler l'éclat de votre sourire, sans jamais le dénaturer.",
+      focus: "Blanchiment fläsh",
     },
     {
       id: "prothese",
@@ -93,6 +116,7 @@ export const SITE = {
       short: "Retrouvez confort, fonction et confiance.",
       description:
         "Prothèses fixes et amovibles réalisées sur-mesure, avec un souci constant du détail et du rendu naturel.",
+      focus: "Couronne sur-mesure",
     },
     {
       id: "pediatrie",
@@ -100,27 +124,32 @@ export const SITE = {
       short: "Des soins doux, pensés pour les enfants.",
       description:
         "Une approche rassurante et bienveillante pour que les plus jeunes apprivoisent le dentiste en toute sérénité.",
+      focus: "Dents de lait",
     },
   ] as Service[],
 
   approach: [
     {
+      icon: "specialites",
       title: "Approche multidisciplinaire",
       text: "Esthétique, prothèse, pédiatrie, urgences : une prise en charge complète, sous un même toit.",
     },
     {
+      icon: "technologie",
       title: "Technologie avancée",
       text: "Imagerie, blanchiment fläsh et équipements de dernière génération au service de la précision.",
     },
     {
+      icon: "hygiene",
       title: "Hygiène irréprochable",
       text: "Stérilisation rigoureuse et protocoles stricts, pour des soins en toute sécurité.",
     },
     {
+      icon: "ecoute",
       title: "Une relation de confiance",
       text: "Le temps de l'écoute, des explications claires, et le respect de votre rythme.",
     },
-  ],
+  ] as ApproachItem[],
 
   reviews: [
     {
@@ -134,6 +163,7 @@ export const SITE = {
       city: "Rabat",
       service: "Urgence",
       text: "Une urgence un dimanche soir, pris en charge en moins d'une heure. Professionnalisme et humanité — je recommande à 100%.",
+      featured: true,
     },
     {
       name: "Fatima-Zahra K.",

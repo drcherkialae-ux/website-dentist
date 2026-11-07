@@ -1,19 +1,21 @@
 "use client";
 
-import {
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-} from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Visite 3D d'une pièce du cabinet : mouvement de caméra automatique
- * (zoom/panoramique), rotation subtile au survol / toucher, chargement
- * différé avec loader luxe. 100 % images optimisées — aucune vidéo.
+ * Une pièce du cabinet : enchaînement lent des points de vue (fondu + léger
+ * mouvement de caméra), titre et indicateur de page.
+ *
+ * HIG — Page controls, Loading, Accessibility :
+ * · aperçu flou immédiat plutôt qu'un indicateur de chargement ;
+ * · indicateurs monochromes, zone tactile ≥ 28 pt, minuteur visible ;
+ * · défilement automatique en pause au survol / focus, arrêté dès qu'une
+ *   vue est choisie, désactivé avec « Réduire les animations ».
+ *
+ * `active = false` (pièce fermée) : première vue seule, immobile, sans titre
+ * ni indicateur — les autres vues ne se chargent qu'à l'ouverture.
  */
 
 export type TourSlide = {
@@ -27,37 +29,59 @@ export type TourSlide = {
 type Props = {
   slides: TourSlide[];
   title: string;
+  caption?: string;
+  active?: boolean;
   widths: number[];
   sizes: string;
   imgW: number;
   imgH: number;
+  placeholder?: string;
   className?: string;
 };
 
-const SLIDE_MS = 7600;
+const SLIDE_MS = 6500;
 
 export default function RoomTour({
   slides,
   title,
+  caption,
+  active = true,
   widths,
   sizes,
   imgW,
   imgH,
+  placeholder,
   className,
 }: Props) {
   const reduce = useReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const [armed, setArmed] = useState(false); // entré dans le viewport → on charge
-  const [ready, setReady] = useState(false); // 1re image décodée → on révèle
-  const [inView, setInView] = useState(false); // visible → la caméra tourne
-  const [active, setActive] = useState(0);
+  const [armed, setArmed] = useState(false); // proche du viewport → on charge
+  const [ready, setReady] = useState(false); // 1re image décodée
+  const [inView, setInView] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [chosen, setChosen] = useState(false); // la personne a pris la main
+  const [current, setCurrent] = useState(0);
+
+  // À chaque ouverture, la visite repart de la première vue.
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (active) {
+      setCurrent(0);
+      setChosen(false);
+    }
+  }
+
+  const shown = active ? current : 0;
+  const playing =
+    active && ready && !reduce && inView && !hovered && !focused && !chosen && slides.length > 1;
 
   const srcSet = (name: string, ext: "avif" | "webp") =>
     widths.map((w) => `/media/${name}-${w}.${ext} ${w}w`).join(", ");
   const fallbackW = widths[Math.min(1, widths.length - 1)];
 
-  /* Chargement différé + pause de la caméra hors écran */
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -67,159 +91,155 @@ export default function RoomTour({
         setInView(visible);
         if (visible) setArmed(true);
       },
-      { rootMargin: "200px" },
+      { rootMargin: "240px" },
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
-  /* Caméra automatique : enchaîne lentement les points de vue */
   useEffect(() => {
-    if (!ready || reduce || !inView || slides.length < 2) return;
-    const t = setInterval(() => setActive((i) => (i + 1) % slides.length), SLIDE_MS);
-    return () => clearInterval(t);
-  }, [ready, reduce, inView, slides.length]);
-
-  /* Rotation subtile au pointeur (souris + toucher) */
-  const px = useMotionValue(0);
-  const py = useMotionValue(0);
-  const sx = useSpring(px, { stiffness: 60, damping: 18, mass: 0.6 });
-  const sy = useSpring(py, { stiffness: 60, damping: 18, mass: 0.6 });
-  const rotateY = useTransform(sx, [-0.5, 0.5], [-3.2, 3.2]);
-  const rotateX = useTransform(sy, [-0.5, 0.5], [2.4, -2.4]);
-  const shiftX = useTransform(sx, [-0.5, 0.5], [8, -8]);
-  const shiftY = useTransform(sy, [-0.5, 0.5], [6, -6]);
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (reduce) return;
-    const r = rootRef.current?.getBoundingClientRect();
-    if (!r) return;
-    px.set((e.clientX - r.left) / r.width - 0.5);
-    py.set((e.clientY - r.top) / r.height - 0.5);
-  };
-  const onPointerLeave = () => {
-    px.set(0);
-    py.set(0);
-  };
+    if (!playing) return;
+    const t = setTimeout(() => setCurrent((i) => (i + 1) % slides.length), SLIDE_MS);
+    return () => clearTimeout(t);
+  }, [playing, current, slides.length]);
 
   return (
     <div
       ref={rootRef}
-      onPointerMove={onPointerMove}
-      onPointerLeave={onPointerLeave}
-      className={cn(
-        "group relative touch-pan-y overflow-hidden bg-[#101b2e]",
-        className,
-      )}
-      style={{ perspective: 1200 }}
-      aria-label={`Visite immersive — ${title}`}
+      role="group"
+      aria-roledescription="carrousel"
+      aria-label={title}
+      onPointerEnter={(e) => e.pointerType === "mouse" && setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false);
+      }}
+      className={cn("relative isolate overflow-hidden bg-bg-secondary", className)}
     >
-      {/* Pile d'images — caméra lente + rotation 3D subtile */}
-      <motion.div
-        style={reduce ? undefined : { rotateX, rotateY, scale: 1.045 }}
-        className="absolute inset-0 will-change-transform"
+      {placeholder && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 scale-110 bg-cover bg-center blur-2xl"
+          style={{ backgroundImage: `url(${placeholder})` }}
+        />
+      )}
+
+      {armed &&
+        (active ? slides : slides.slice(0, 1)).map((s, i) => {
+          const isShown = i === shown;
+          return (
+            <div
+              key={s.name}
+              aria-hidden={!isShown}
+              className={cn(
+                "absolute inset-0 transition-opacity duration-[1200ms] ease-in-out",
+                ready && isShown ? "opacity-100" : "opacity-0",
+              )}
+            >
+              <motion.div
+                initial={false}
+                animate={
+                  reduce
+                    ? undefined
+                    : isShown && active
+                      ? { scale: s.to, x: s.drift }
+                      : { scale: s.from, x: 0 }
+                }
+                transition={
+                  isShown && active
+                    ? { duration: SLIDE_MS / 1000 + 1.6, ease: "linear" }
+                    : { duration: 0 }
+                }
+                className="absolute inset-0"
+              >
+                <picture>
+                  <source type="image/avif" srcSet={srcSet(s.name, "avif")} sizes={sizes} />
+                  <source type="image/webp" srcSet={srcSet(s.name, "webp")} sizes={sizes} />
+                  <img
+                    src={`/media/${s.name}-${fallbackW}.webp`}
+                    srcSet={srcSet(s.name, "webp")}
+                    sizes={sizes}
+                    alt={s.alt}
+                    width={imgW}
+                    height={imgH}
+                    loading="lazy"
+                    decoding="async"
+                    onLoad={i === 0 ? () => setReady(true) : undefined}
+                    className="h-full w-full object-cover"
+                  />
+                </picture>
+              </motion.div>
+            </div>
+          );
+        })}
+
+      {/* Titre de la pièce ouverte, lisible sur la photo */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/55 via-black/20 to-transparent px-5 pb-16 pt-5 text-white transition-opacity duration-300 ease-out sm:px-7 sm:pt-6",
+          active ? "opacity-100" : "opacity-0",
+        )}
       >
-        <motion.div style={reduce ? undefined : { x: shiftX, y: shiftY }} className="absolute inset-0">
-          {armed &&
-            slides.map((s, i) => {
-              const isActive = i === active;
-              return (
-                <motion.div
-                  key={s.name}
-                  initial={false}
-                  animate={{ opacity: ready ? (isActive ? 1 : 0) : 0 }}
-                  transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-0"
-                >
-                  <motion.div
-                    initial={false}
-                    animate={
-                      reduce
-                        ? undefined
-                        : isActive
-                          ? { scale: s.to, x: s.drift }
-                          : { scale: s.from, x: 0 }
-                    }
-                    transition={
-                      isActive
-                        ? { duration: SLIDE_MS / 1000 + 2.2, ease: "linear" }
-                        : { duration: 0 }
-                    }
-                    className="absolute inset-0"
-                  >
-                    <picture>
-                      <source type="image/avif" srcSet={srcSet(s.name, "avif")} sizes={sizes} />
-                      <source type="image/webp" srcSet={srcSet(s.name, "webp")} sizes={sizes} />
-                      <img
-                        src={`/media/${s.name}-${fallbackW}.webp`}
-                        srcSet={srcSet(s.name, "webp")}
-                        sizes={sizes}
-                        alt={s.alt}
-                        width={imgW}
-                        height={imgH}
-                        loading="lazy"
-                        decoding="async"
-                        onLoad={i === 0 ? () => setReady(true) : undefined}
-                        className="h-full w-full object-cover"
-                      />
-                    </picture>
-                  </motion.div>
-                </motion.div>
-              );
-            })}
-        </motion.div>
-      </motion.div>
+        <p className="font-display text-title1 font-normal">{title}</p>
+        {caption ? (
+          <p className="mt-1.5 max-w-[440px] text-subheadline text-white/85">{caption}</p>
+        ) : null}
+      </div>
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent transition-opacity duration-300",
+          active ? "opacity-100" : "opacity-0",
+        )}
+      />
 
-      {/* Éclairage : vignette + chaleur en bas — profondeur premium */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_38%,transparent_55%,rgba(6,11,26,0.45)_100%)]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-abyss/70 via-abyss/15 to-transparent" />
-
-      {/* Loader luxe — visible tant que la 1re image n'est pas décodée */}
-      <motion.div
-        initial={false}
-        animate={{ opacity: ready ? 0 : 1 }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
-        style={{ pointerEvents: ready ? "none" : "auto" }}
-        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[#0b1424]"
-      >
-        <span className="lux-ring h-12 w-12" aria-hidden="true" />
-        <span className="lux-pulse text-[10px] font-medium uppercase tracking-[0.42em] text-champagne">
-          Le cabinet
-        </span>
-      </motion.div>
-
-      {/* Légende + indicateurs */}
-      <motion.div
-        initial={false}
-        animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 12 }}
-        transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute inset-x-4 bottom-4 z-10 flex items-end justify-between gap-3"
-      >
-        <span className="glass rounded-full px-4 py-1.5 text-xs font-medium text-white">
-          {title}
-        </span>
-
-        {slides.length > 1 && (
-          <div className="flex items-center gap-1.5 pb-1" role="tablist" aria-label={`Vues — ${title}`}>
-            {slides.map((s, i) => (
+      {slides.length > 1 && (
+        <div
+          className={cn(
+            "glass-clear absolute bottom-3.5 left-1/2 flex -translate-x-1/2 items-center rounded-full px-1.5 transition-opacity duration-300",
+            active ? "opacity-100" : "invisible opacity-0",
+          )}
+        >
+          {slides.map((s, i) => {
+            const isShown = i === shown;
+            return (
               <button
                 key={s.name}
                 type="button"
-                role="tab"
-                aria-selected={i === active}
-                aria-label={`Vue ${i + 1}`}
-                onClick={() => setActive(i)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-500",
-                  i === active
-                    ? "w-6 bg-champagne"
-                    : "w-1.5 bg-white/40 hover:bg-white/70",
-                )}
-              />
-            ))}
-          </div>
-        )}
-      </motion.div>
+                aria-label={`Vue ${i + 1} sur ${slides.length}`}
+                aria-current={isShown ? "true" : undefined}
+                onClick={() => {
+                  setChosen(true);
+                  setCurrent(i);
+                }}
+                className="group grid h-7 min-w-7 place-items-center px-1"
+              >
+                <span
+                  className={cn(
+                    "relative block h-[7px] overflow-hidden rounded-full transition-[width,background-color] duration-300 ease-ios",
+                    isShown
+                      ? "w-5 bg-white/40"
+                      : "w-[7px] bg-white/45 group-hover:bg-white/75",
+                  )}
+                >
+                  {isShown && (
+                    <span
+                      key={`${shown}-${playing}`}
+                      className="absolute inset-0 origin-left rounded-full bg-white"
+                      style={
+                        playing
+                          ? { animation: `page-progress ${SLIDE_MS}ms linear forwards` }
+                          : undefined
+                      }
+                    />
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

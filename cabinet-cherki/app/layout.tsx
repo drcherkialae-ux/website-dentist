@@ -1,30 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Sora, Fraunces } from "next/font/google";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { SITE } from "@/lib/site";
-import SmoothScroll from "@/components/SmoothScroll";
 import Navbar from "@/components/Navbar";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
 import Footer from "@/components/Footer";
 
+/* Texte : police système (SF Pro) sur les appareils Apple ; Inter, très
+   proche, partout ailleurs. */
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-sora",
-  display: "swap",
-});
-
+/* Titres : Fraunces, avec ses tailles optiques (plus fine en grand). */
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
-  style: ["normal", "italic"],
+  axes: ["opsz"],
   display: "swap",
 });
+
+/* Thème posé avant le premier affichage (pas de flash) : choix mémorisé,
+   sinon réglage de l'appareil. Cf. components/ThemeToggle.tsx. */
+const THEME_SCRIPT = `(function(){var t;try{t=localStorage.getItem("theme")}catch(e){}if(t!=="light"&&t!=="dark")t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t})()`;
 
 const siteUrl = "https://drcherkialae.com";
 
@@ -48,6 +48,10 @@ export const metadata: Metadata = {
     "Boulevard Sahl Rhône Témara",
   ],
   authors: [{ name: SITE.brand.name }],
+  /* Safari iOS transforme sinon les numéros et l'adresse en liens avant que
+     React ne prenne la main (erreur d'hydratation). Les numéros utiles sont
+     déjà des liens tel: explicites. */
+  formatDetection: { telephone: false, address: false, email: false },
   openGraph: {
     type: "website",
     locale: "fr_MA",
@@ -68,9 +72,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#16299c",
+  /* Accordé à la photo d'accueil, premier écran visible. */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#060b1a" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+  colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 const jsonLd = {
@@ -114,20 +124,26 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="fr"
-      className={`${inter.variable} ${sora.variable} ${fraunces.variable}`}
-    >
-      <body className="min-h-screen bg-white antialiased">
+    // data-theme est ajouté par le script de thème avant l'hydratation.
+    <html lang="fr" className={`${inter.variable} ${fraunces.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen">
+        {/* Script bloquant en tout début de <body> : il s'exécute avant que le
+            moindre contenu ne soit analysé ou affiché (next/script le
+            différerait, d'où un flash clair en mode sombre). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <SmoothScroll>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-        </SmoothScroll>
+        <a
+          href="#contenu"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-full focus:bg-tint-fill focus:px-5 focus:py-3 focus:text-subheadline focus:font-semibold focus:text-on-tint"
+        >
+          Aller au contenu
+        </a>
+        <Navbar />
+        <main id="contenu">{children}</main>
+        <Footer />
         <StickyMobileCTA />
       </body>
     </html>

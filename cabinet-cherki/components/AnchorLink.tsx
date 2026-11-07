@@ -1,43 +1,29 @@
 "use client";
 
-import { useLenis } from "lenis/react";
-import type { ReactNode } from "react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 
-type Props = {
+type Props = AnchorHTMLAttributes<HTMLAnchorElement> & {
   href: string;
-  className?: string;
   children: ReactNode;
+  /** Appelé au clic (ex. fermer le menu). */
   onNavigate?: () => void;
-  ariaLabel?: string;
 };
 
-/** Lien d'ancre interne qui défile en douceur via Lenis (offset navbar). */
-export default function AnchorLink({
-  href,
-  className,
-  children,
-  onNavigate,
-  ariaLabel,
-}: Props) {
-  const lenis = useLenis();
-
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!href.startsWith("#")) return;
-    e.preventDefault();
-    const el = document.querySelector(href);
-    if (el) {
-      if (lenis) lenis.scrollTo(el as HTMLElement, { offset: -76 });
-      else el.scrollIntoView({ behavior: "smooth" });
-    }
-    onNavigate?.();
-  };
-
+/**
+ * Lien d'ancre interne. Le défilement reste natif (il suit le geste) ;
+ * la douceur vient de `scroll-behavior: smooth`, désactivée si la personne
+ * a choisi « Réduire les animations ». `scroll-padding-top` tient compte de
+ * la barre flottante.
+ */
+export default function AnchorLink({ href, children, onNavigate, onClick, ...props }: Props) {
   return (
     <a
       href={href}
-      className={className}
-      onClick={handleClick}
-      aria-label={ariaLabel}
+      onClick={(e) => {
+        onClick?.(e);
+        onNavigate?.();
+      }}
+      {...props}
     >
       {children}
     </a>

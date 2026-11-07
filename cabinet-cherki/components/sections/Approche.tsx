@@ -1,55 +1,62 @@
-import Reveal from "@/components/motion/Reveal";
+import { Container, Section, SectionHeader } from "@/components/ui/Section";
+import { LQIP } from "@/lib/placeholders";
 import { SITE } from "@/lib/site";
 
+/* Le docteur au fauteuil (960 × 1280) */
+const WIDTHS = [480, 800];
+const SIZES = "(min-width: 1024px) 40vw, 92vw";
+const srcSet = (ext: "avif" | "webp") =>
+  WIDTHS.map((w) => `/media/working-chair-${w}.${ext} ${w}w`).join(", ");
+
+/** Quatre engagements en liste éditoriale (titre, texte) : une photo réelle, pas de pictogrammes. */
 export default function Approche() {
   return (
-    <section
-      id="approche"
-      className="relative overflow-hidden bg-ink py-24 text-white md:py-32"
-    >
-      <div className="pointer-events-none absolute inset-0 bg-aurora opacity-60" />
-      <div className="pointer-events-none absolute left-1/2 top-0 h-64 w-[44rem] max-w-full -translate-x-1/2 rounded-full bg-teal/10 blur-[120px]" />
+    <Section id="approche" tone="grouped" labelledBy="approche-title">
+      <Container>
+        <SectionHeader
+          id="approche-title"
+          eyebrow="Notre approche"
+          title="La technologie, au service de l'humain."
+          intro="Un cabinet où l'exigence clinique rencontre l'attention portée à chacun. Voici ce qui guide chaque geste."
+        />
 
-      <div className="relative mx-auto w-full max-w-7xl px-5 md:px-10">
-        <div className="max-w-2xl">
-          <Reveal>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-teal-light">
-              Notre approche
-            </p>
-          </Reveal>
-          <Reveal delay={0.05}>
-            <h2 className="font-display mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-[2.9rem]">
-              La technologie, au service de l&apos;humain.
-            </h2>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="mt-5 text-base leading-relaxed text-white/65">
-              Un cabinet où l&apos;exigence clinique rencontre l&apos;attention
-              portée à chacun. Voici ce qui guide chaque geste.
-            </p>
-          </Reveal>
-        </div>
+        <div className="mt-14 grid items-start gap-12 lg:mt-20 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <figure className="relative aspect-[4/5] overflow-hidden rounded-tile bg-bg-secondary lg:sticky lg:top-28">
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 scale-110 bg-cover bg-center blur-2xl"
+              style={{ backgroundImage: `url(${LQIP.workingChair})` }}
+            />
+            <picture>
+              <source type="image/avif" srcSet={srcSet("avif")} sizes={SIZES} />
+              <source type="image/webp" srcSet={srcSet("webp")} sizes={SIZES} />
+              <img
+                src="/media/working-chair-800.webp"
+                srcSet={srcSet("webp")}
+                sizes={SIZES}
+                width={960}
+                height={1280}
+                alt={`${SITE.brand.doctor} en soin, au fauteuil`}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover object-[50%_42%]"
+              />
+            </picture>
+          </figure>
 
-        <div className="mt-14 grid gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/5 sm:grid-cols-2 lg:grid-cols-4">
-          {SITE.approach.map((a, i) => (
-            <Reveal
-              key={a.title}
-              delay={i * 0.08}
-              className="group bg-ink/40 p-7 transition-colors duration-500 hover:bg-white/[0.06]"
-            >
-              <span className="font-display text-sm font-semibold text-teal-light/70">
-                0{i + 1}
-              </span>
-              <h3 className="font-display mt-6 text-lg font-semibold tracking-tight">
-                {a.title}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-white/60">
-                {a.text}
-              </p>
-            </Reveal>
-          ))}
+          <ul className="border-t border-separator">
+            {SITE.approach.map((item) => (
+              <li
+                key={item.title}
+                className="border-b border-separator py-8 sm:grid sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-10 sm:py-10"
+              >
+                <h3 className="font-display text-title1 font-normal">{item.title}</h3>
+                <p className="mt-3 text-body text-label-secondary sm:mt-1">{item.text}</p>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 }

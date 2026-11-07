@@ -1,116 +1,66 @@
-import Image from "next/image";
-import Reveal from "@/components/motion/Reveal";
-import Parallax from "@/components/motion/Parallax";
-import { RdvButton } from "@/components/cta";
+import { ChevronLink } from "@/components/ui/Button";
+import { Container, Eyebrow, Section } from "@/components/ui/Section";
+import { LQIP } from "@/lib/placeholders";
 import { SITE } from "@/lib/site";
 
 /* Portrait studio du docteur (1856 × 2304) */
-const PORTRAIT_WIDTHS = [640, 1080, 1440];
-const PORTRAIT_SIZES = "(max-width: 1024px) 90vw, 45vw";
-const portraitSrcSet = (ext: "avif" | "webp") =>
-  PORTRAIT_WIDTHS.map((w) => `/media/doctor-portrait-${w}.${ext} ${w}w`).join(", ");
-
-const chips = [
-  "Approche multidisciplinaire",
-  "Technologie fläsh",
-  "Hygiène rigoureuse",
-  "À votre écoute",
-];
+const WIDTHS = [640, 1080, 1440];
+const SIZES = "(min-width: 1024px) 46vw, 92vw";
+const srcSet = (ext: "avif" | "webp") =>
+  WIDTHS.map((w) => `/media/doctor-portrait-${w}.${ext} ${w}w`).join(", ");
 
 export default function Doctor() {
+  const role = SITE.brand.role.toLowerCase();
+
   return (
-    <section id="docteur" className="relative overflow-hidden bg-white py-24 md:py-32">
-      <div className="mx-auto grid w-full max-w-7xl items-center gap-14 px-5 md:px-10 lg:grid-cols-2 lg:gap-20">
-        {/* Composition visuelle */}
-        <div className="relative">
-          <div className="pointer-events-none absolute -left-10 -top-10 h-72 w-72 rounded-full bg-teal/15 blur-[90px]" />
-          <Parallax amount={40}>
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] shadow-soft ring-1 ring-ink/5">
-              <picture>
-                <source type="image/avif" srcSet={portraitSrcSet("avif")} sizes={PORTRAIT_SIZES} />
-                <source type="image/webp" srcSet={portraitSrcSet("webp")} sizes={PORTRAIT_SIZES} />
-                <img
-                  src="/media/doctor-portrait-1080.webp"
-                  srcSet={portraitSrcSet("webp")}
-                  sizes={PORTRAIT_SIZES}
-                  width={1440}
-                  height={1788}
-                  alt={SITE.brand.doctor}
-                  loading="lazy"
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              </picture>
-            </div>
-          </Parallax>
+    <Section id="docteur" labelledBy="docteur-title">
+      <Container className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-20">
+        <figure className="relative aspect-[4/5] overflow-hidden rounded-tile bg-bg-secondary">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 scale-110 bg-cover bg-center blur-2xl"
+            style={{ backgroundImage: `url(${LQIP.doctorPortrait})` }}
+          />
+          <picture>
+            <source type="image/avif" srcSet={srcSet("avif")} sizes={SIZES} />
+            <source type="image/webp" srcSet={srcSet("webp")} sizes={SIZES} />
+            <img
+              src="/media/doctor-portrait-1080.webp"
+              srcSet={srcSet("webp")}
+              sizes={SIZES}
+              width={1440}
+              height={1788}
+              alt={`Portrait du ${SITE.brand.doctor}, ${role}`}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </picture>
+        </figure>
 
-          {/* Image incrustée */}
-          <div className="absolute -bottom-8 -right-2 w-44 sm:w-52 lg:-right-8">
-            <Parallax amount={-28}>
-              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl shadow-lift ring-4 ring-white">
-                <Image
-                  src="/media/working-chair.jpg"
-                  alt={`${SITE.brand.doctor} en soin`}
-                  fill
-                  sizes="220px"
-                  className="object-cover"
-                />
-              </div>
-            </Parallax>
-          </div>
-        </div>
-
-        {/* Texte */}
         <div>
-          <Reveal>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-teal">
-              Le Docteur
-            </p>
-          </Reveal>
-          <Reveal delay={0.05}>
-            <h2 className="font-display mt-4 text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl lg:text-[2.9rem]">
-              Un soin d&apos;exception, porté par une vision humaine.
-            </h2>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-ink/65">
-              {SITE.brand.doctor}, {SITE.brand.role.toLowerCase()} à Témara, a
-              fondé un cabinet pensé autour d&apos;une idée simple : des soins
-              d&apos;excellence, dans un cadre rassurant et profondément humain.
-              Diagnostic précis, explications claires, et le temps qu&apos;il
-              faut pour chaque patient.
-            </p>
-          </Reveal>
+          <Eyebrow>Le Docteur</Eyebrow>
+          <h2 id="docteur-title" className="mt-5 font-display text-display">
+            Un soin d&apos;exception, porté par une vision humaine.
+          </h2>
+          <p className="mt-5 text-lead text-label-secondary">
+            {`${SITE.brand.doctor}, ${role} à Témara, a fondé un cabinet pensé autour d'une idée simple : des soins d'excellence, dans un cadre rassurant et profondément humain. Diagnostic précis, explications claires, et le temps qu'il faut pour chaque patient.`}
+          </p>
 
-          <Reveal delay={0.15}>
-            <blockquote className="mt-8 border-l-2 border-teal/50 pl-5">
-              <p className="font-serif text-xl italic leading-relaxed text-ink/80 sm:text-2xl">
-                « Chaque sourire raconte une histoire. Mon rôle est d&apos;en
-                prendre soin — avec précision, et avec bienveillance. »
-              </p>
+          <figure className="mt-10 border-t border-separator pt-8">
+            <blockquote className="font-display text-title1 font-normal text-label">
+              {"« Chaque sourire raconte une histoire. Mon rôle est d'en prendre soin — avec précision, et avec bienveillance. »"}
             </blockquote>
-          </Reveal>
+            <figcaption className="mt-4 text-subheadline text-label-secondary">
+              {SITE.brand.doctor} · {SITE.brand.role}
+            </figcaption>
+          </figure>
 
-          <Reveal delay={0.2}>
-            <ul className="mt-8 flex flex-wrap gap-2.5">
-              {chips.map((c) => (
-                <li
-                  key={c}
-                  className="rounded-full border border-ink/10 bg-mist px-4 py-2 text-sm text-ink/70"
-                >
-                  {c}
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-
-          <Reveal delay={0.25}>
-            <div className="mt-9">
-              <RdvButton />
-            </div>
-          </Reveal>
+          <ChevronLink href="#rendez-vous" className="mt-8 text-body">
+            Prendre rendez-vous
+          </ChevronLink>
         </div>
-      </div>
-    </section>
+      </Container>
+    </Section>
   );
 }

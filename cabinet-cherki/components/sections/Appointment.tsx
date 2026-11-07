@@ -1,33 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { SITE } from "@/lib/site";
-import { SELECT_SERVICE_EVENT } from "@/lib/events";
+import { useEffect, useRef, useState } from "react";
+import OpenStatus, { useClinicToday } from "@/components/OpenStatus";
+import { buttonStyles } from "@/components/ui/Button";
+import { SelectField, TextArea, TextField } from "@/components/ui/Field";
+import { InsetGroup, Row } from "@/components/ui/List";
+import { Container, Section, SectionHeader } from "@/components/ui/Section";
+import {
+  Check,
+  Exclamation,
+  Lock,
+  MapPin,
+  MedicalCase,
+  Message,
+  Phone,
+} from "@/components/ui/icons";
 import { APPOINTMENT_ENDPOINT } from "@/lib/config";
-import ContactMap from "./ContactMap";
-
-const fieldClass =
-  "w-full rounded-xl border border-ink/12 bg-mist/60 px-4 py-3 text-[15px] text-ink outline-none transition placeholder:text-ink/35 focus:border-teal focus:bg-white focus:ring-2 focus:ring-teal/25";
+import { SELECT_SERVICE_EVENT } from "@/lib/events";
+import { SITE } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 type Status = "idle" | "submitting" | "success" | "error";
+type Required = "name" | "phone" | "email";
+
+const SLOTS = ["Dès que possible", "Matin", "Après-midi", "Samedi"];
 
 const emptyForm = {
   name: "",
-  email: "",
   phone: "",
+  email: "",
   service: "",
-  date: "",
+  slot: "",
+  dateDetail: "",
   note: "",
 };
 
-const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim());
+const digitCount = (v: string) => v.replace(/\D/g, "").length;
+
+/* Messages près du champ, sans reproche, avec la marche à suivre. */
+function validate(form: typeof emptyForm): Record<Required, string> {
+  return {
+    name: form.name.trim() ? "" : "Indiquez votre nom complet.",
+    phone: !form.phone.trim()
+      ? "Indiquez un numéro pour que le cabinet vous rappelle."
+      : digitCount(form.phone) < 9
+        ? "Ce numéro semble incomplet. Exemple : 06 12 34 56 78."
+        : "",
+    email: !form.email.trim()
+      ? "Indiquez votre adresse email."
+      : isEmail(form.email)
+        ? ""
+        : "Saisissez une adresse au format nom@exemple.com.",
+  };
+}
+
+const mapEmbed =
+  "https://www.google.com/maps?q=" +
+  encodeURIComponent("Boulevard Sahl Rhône, Témara, Maroc") +
+  "&z=16&output=embed";
 
 export default function Appointment() {
   const [form, setForm] = useState(emptyForm);
+  const [touched, setTouched] = useState<Record<Required, boolean>>({
+    name: false,
+    phone: false,
+    email: false,
+  });
   const [status, setStatus] = useState<Status>("idle");
-  const [error, setError] = useState("");
   const [patientNotified, setPatientNotified] = useState(false);
 
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const successRef = useRef<HTMLHeadingElement>(null);
+  const today = useClinicToday();
+
+  /* Pré-sélection du motif depuis les cartes de services. */
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<string>).detail;
@@ -37,309 +86,376 @@ export default function Appointment() {
     return () => window.removeEventListener(SELECT_SERVICE_EVENT, handler);
   }, []);
 
-  const update =
-    (key: keyof typeof form) =>
-    (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
-    ) =>
+  /* Confirmation : on y place le focus pour qu'elle soit annoncée. */
+  useEffect(() => {
+    if (status === "success") successRef.current?.focus();
+  }, [status]);
+
+  const errors = validate(form);
+  const shown = (k: Required) => (touched[k] ? errors[k] : "");
+
+  const set =
+    (key: keyof typeof emptyForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }));
+  const touch = (key: Required) => () => setTouched((t) => ({ ...t, [key]: true }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.phone.trim() || !isEmail(form.email)) {
-      setError("Merci d'indiquer votre nom, un email valide et votre téléphone.");
-      setStatus("error");
+    if (status === "submitting") return;
+    const refs = { name: nameRef, phone: phoneRef, email: emailRef };
+    const firstInvalid = (["name", "phone", "email"] as Required[]).find((k) => errors[k]);
+    if (firstInvalid) {
+      setTouched({ name: true, phone: true, email: true });
+      refs[firstInvalid].current?.focus();
       return;
     }
-    setError("");
+
     setStatus("submitting");
     try {
       const res = await fetch(APPOINTMENT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          service: form.service,
+          date: [form.slot, form.dateDetail.trim()].filter(Boolean).join(" — "),
+          note: form.note.trim(),
+        }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Échec de l'envoi.");
-      }
+      if (!res.ok || !data.ok) throw new Error(data.error || "Échec de l'envoi.");
       setPatientNotified(Boolean(data.patientNotified));
       setStatus("success");
     } catch {
-      setError(
-        "L'envoi a échoué. Merci de réessayer, ou appelez-nous au " +
-          SITE.contact.cabinetPhoneDisplay +
-          ".",
-      );
       setStatus("error");
     }
   };
 
   const reset = () => {
     setForm(emptyForm);
+    setTouched({ name: false, phone: false, email: false });
     setStatus("idle");
-    setError("");
   };
 
   return (
-    <section
-      id="rendez-vous"
-      className="relative overflow-hidden bg-aurora py-24 text-white md:py-32"
-    >
-      <div className="pointer-events-none absolute -left-20 top-10 h-96 w-96 rounded-full bg-teal/15 blur-[120px]" />
+    <Section id="rendez-vous" labelledBy="rendez-vous-title">
+      <Container>
+        <SectionHeader
+          id="rendez-vous-title"
+          eyebrow="Rendez-vous"
+          title="Prenez rendez-vous."
+          intro="Remplissez le formulaire : un email de confirmation vous est envoyé et le cabinet vous rappelle rapidement. Une urgence ? Appelez, à toute heure."
+        />
 
-      <div className="relative mx-auto w-full max-w-7xl px-5 md:px-10">
-        <div className="max-w-2xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-teal-light">
-            Rendez-vous
-          </p>
-          <h2 className="font-display mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-[3rem]">
-            Réservez votre rendez-vous.
-          </h2>
-          <p className="mt-5 text-base leading-relaxed text-white/70">
-            Remplissez le formulaire : vous recevrez un email de confirmation et
-            le cabinet vous recontactera rapidement. Une urgence ? Appelez-nous,
-            à toute heure.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          {/* Formulaire / confirmation */}
-          <div className="rounded-[1.75rem] bg-white p-6 text-ink shadow-lift sm:p-8">
+        <div className="mt-12 grid items-start gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12">
+          {/* ------------------------- Formulaire ------------------------- */}
+          <div className="rounded-tile bg-bg-secondary p-5 sm:p-8">
             {status === "success" ? (
-              <div className="flex h-full flex-col items-center justify-center py-10 text-center">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-teal/12 text-teal">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+              <div className="flex flex-col items-center px-2 py-12 text-center" role="status">
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-green text-white">
+                  <Check className="h-8 w-8" />
                 </span>
-                <h3 className="font-display mt-6 text-2xl font-semibold tracking-tight">
-                  Demande envoyée !
+                <h3
+                  ref={successRef}
+                  tabIndex={-1}
+                  className="mt-6 text-title1 outline-none"
+                >
+                  Demande envoyée
                 </h3>
-                <p className="mt-3 max-w-sm text-[15px] leading-relaxed text-ink/65">
+                <p className="mt-3 max-w-[400px] text-body text-label-secondary">
                   {patientNotified
-                    ? "Un email de confirmation vient de vous être adressé. Le cabinet vous recontactera très prochainement pour fixer le créneau."
-                    : "Votre demande a bien été transmise au cabinet, qui vous recontactera très prochainement pour fixer le créneau."}
+                    ? "Un email de confirmation vient de vous être envoyé. Le cabinet vous rappelle très vite pour fixer le créneau."
+                    : "Le cabinet a bien reçu votre demande et vous rappelle très vite pour fixer le créneau."}
                 </p>
-                <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={reset}
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-ink/15 px-6 text-sm font-medium text-ink transition hover:bg-ink/[0.04]"
-                  >
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <button type="button" onClick={reset} className={buttonStyles("gray", "regular")}>
                     Nouvelle demande
                   </button>
                   <a
                     href={`tel:${SITE.contact.cabinetPhoneTel}`}
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-teal px-6 text-sm font-semibold text-white transition hover:brightness-[1.06]"
+                    className={buttonStyles("tinted", "regular")}
                   >
+                    <Phone />
                     Appeler le cabinet
                   </a>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} noValidate>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-ink/70">
-                      Nom complet *
-                    </label>
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      autoComplete="name"
-                      value={form.name}
-                      onChange={update("name")}
-                      placeholder="Votre nom"
-                      className={fieldClass}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-ink/70">
-                      Téléphone *
-                    </label>
-                    <input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      autoComplete="tel"
-                      value={form.phone}
-                      onChange={update("phone")}
-                      placeholder="06 00 00 00 00"
-                      className={fieldClass}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-ink/70">
-                      Email *
-                    </label>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      value={form.email}
-                      onChange={update("email")}
-                      placeholder="vous@exemple.com"
-                      className={fieldClass}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label htmlFor="service" className="mb-1.5 block text-sm font-medium text-ink/70">
-                      Motif de consultation
-                    </label>
-                    <select
-                      id="service"
-                      name="service"
-                      value={form.service}
-                      onChange={update("service")}
-                      className={fieldClass}
-                    >
-                      <option value="">Choisir un service…</option>
-                      {SITE.services.map((s) => (
-                        <option key={s.id} value={s.name}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-ink/70">
-                      Disponibilité souhaitée
-                    </label>
-                    <input
-                      id="date"
-                      name="date"
-                      type="text"
-                      value={form.date}
-                      onChange={update("date")}
-                      placeholder="Ex. mardi après-midi, ou dès que possible"
-                      className={fieldClass}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label htmlFor="note" className="mb-1.5 block text-sm font-medium text-ink/70">
-                      Message (facultatif)
-                    </label>
-                    <textarea
-                      id="note"
-                      name="note"
-                      rows={3}
-                      value={form.note}
-                      onChange={update("note")}
-                      placeholder="Précisez votre demande si besoin"
-                      className={`${fieldClass} resize-none`}
-                    />
-                  </div>
+              <form onSubmit={handleSubmit} noValidate aria-describedby="champs-obligatoires">
+                <p id="champs-obligatoires" className="mb-4 px-1 text-footnote text-label-secondary">
+                  Les champs marqués d&apos;un astérisque (*) sont obligatoires.
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <TextField
+                    id="name"
+                    name="name"
+                    label="Nom complet"
+                    required
+                    autoComplete="name"
+                    autoCapitalize="words"
+                    enterKeyHint="next"
+                    value={form.name}
+                    onChange={set("name")}
+                    onBlur={touch("name")}
+                    inputRef={nameRef}
+                    error={shown("name")}
+                  />
+                  <TextField
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    label="Téléphone"
+                    required
+                    autoComplete="tel"
+                    inputMode="tel"
+                    enterKeyHint="next"
+                    value={form.phone}
+                    onChange={set("phone")}
+                    onBlur={touch("phone")}
+                    inputRef={phoneRef}
+                    error={shown("phone")}
+                  />
+                  <TextField
+                    id="email"
+                    name="email"
+                    type="email"
+                    label="Email"
+                    required
+                    autoComplete="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    enterKeyHint="next"
+                    value={form.email}
+                    onChange={set("email")}
+                    onBlur={touch("email")}
+                    inputRef={emailRef}
+                    error={shown("email")}
+                    wrapperClassName="sm:col-span-2"
+                  />
+                  <SelectField
+                    id="service"
+                    name="service"
+                    label="Motif de consultation"
+                    value={form.service}
+                    onChange={set("service")}
+                    wrapperClassName="sm:col-span-2"
+                  >
+                    <option value="">Choisir un motif…</option>
+                    {SITE.services.map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </SelectField>
                 </div>
 
-                {status === "error" && error && (
-                  <p className="mt-4 text-sm text-red-500" role="alert">
-                    {error}
-                  </p>
+                {/* Préférence de créneau : un choix plutôt qu'une saisie */}
+                <fieldset className="mt-5">
+                  <legend className="px-1 text-subheadline font-semibold text-label">
+                    Créneau préféré
+                  </legend>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {SLOTS.map((slot) => (
+                      <label key={slot} className="relative">
+                        <input
+                          type="radio"
+                          name="slot"
+                          value={slot}
+                          checked={form.slot === slot}
+                          onChange={set("slot")}
+                          className="peer sr-only"
+                        />
+                        <span className="inline-flex h-11 cursor-pointer select-none items-center gap-1.5 rounded-full border border-field-border bg-field px-4 text-subheadline text-label transition-[background-color,border-color,color,transform] duration-200 ease-ios active:scale-[0.97] peer-checked:border-tint peer-checked:bg-tint-soft peer-checked:font-semibold peer-checked:text-tint peer-focus-visible:shadow-[0_0_0_4px_var(--tint-soft)] [&>svg]:hidden peer-checked:[&>svg]:block">
+                          <Check className="h-3.5 w-3.5" />
+                          {slot}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <div className="mt-4 grid gap-3">
+                  <TextField
+                    id="dateDetail"
+                    name="dateDetail"
+                    label="Jour ou horaire précis (facultatif)"
+                    enterKeyHint="next"
+                    value={form.dateDetail}
+                    onChange={set("dateDetail")}
+                  />
+                  <TextArea
+                    id="note"
+                    name="note"
+                    label="Message (facultatif)"
+                    rows={3}
+                    value={form.note}
+                    onChange={set("note")}
+                  />
+                </div>
+
+                {status === "error" && (
+                  <div
+                    role="alert"
+                    className="mt-5 flex gap-3 rounded-[16px] bg-red-soft p-4 text-subheadline text-label"
+                  >
+                    <Exclamation className="h-5 w-5 shrink-0 text-red" />
+                    <p>
+                      La demande n&apos;a pas pu être envoyée. Réessayez dans un
+                      instant, ou appelez le cabinet au{" "}
+                      <a
+                        href={`tel:${SITE.contact.cabinetPhoneTel}`}
+                        className="whitespace-nowrap font-semibold text-tint underline-offset-2 hover:underline"
+                      >
+                        {SITE.contact.cabinetPhoneDisplay}
+                      </a>
+                      .
+                    </p>
+                  </div>
                 )}
 
                 <button
                   type="submit"
-                  disabled={status === "submitting"}
-                  className="mt-6 inline-flex h-13 w-full items-center justify-center gap-2.5 rounded-full bg-teal px-7 py-3.5 text-[15px] font-semibold text-white shadow-soft transition-all duration-300 hover:shadow-lift hover:brightness-[1.06] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+                  aria-busy={status === "submitting" || undefined}
+                  className={buttonStyles("prominent", "large", "mt-6 w-full")}
                 >
                   {status === "submitting" ? (
                     <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      <ActivityIndicator />
                       Envoi en cours…
                     </>
                   ) : (
-                    <>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="m4 6 8 6 8-6M4 6h16v12H4V6Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Envoyer ma demande
-                    </>
+                    "Envoyer la demande"
                   )}
                 </button>
 
-                <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-ink/50">
+                <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-footnote text-label-secondary">
                   <span className="inline-flex items-center gap-1.5">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.8" />
-                      <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.8" />
-                    </svg>
+                    <Lock className="h-3.5 w-3.5" />
                     Données confidentielles
                   </span>
-                  <span>·</span>
-                  <a href={`tel:${SITE.contact.cabinetPhoneTel}`} className="font-medium text-teal hover:underline">
-                    ou appeler le {SITE.contact.cabinetPhoneDisplay}
+                  <span aria-hidden="true">·</span>
+                  <a
+                    href={`tel:${SITE.contact.cabinetPhoneTel}`}
+                    className="-my-2 py-2 text-tint hover:underline"
+                  >
+                    ou appelez le {SITE.contact.cabinetPhoneDisplay}
                   </a>
-                </div>
+                </p>
               </form>
             )}
           </div>
 
-          {/* Coordonnées + horaires */}
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <a
+          {/* ------------------------ Coordonnées ------------------------- */}
+          <div className="flex flex-col gap-8">
+            <InsetGroup title="Contact">
+              <Row
                 href={`tel:${SITE.contact.cabinetPhoneTel}`}
-                className="glass flex items-center gap-4 rounded-2xl p-5 transition-colors hover:bg-white/10"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-teal/20 text-teal-light">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M6.6 10.8a13.4 13.4 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24c1.1.36 2.3.56 3.5.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.3a1 1 0 0 1 1 1c0 1.2.2 2.4.56 3.5a1 1 0 0 1-.24 1l-2.2 2.3Z" />
-                  </svg>
-                </span>
-                <span>
-                  <span className="block text-xs text-white/55">Cabinet</span>
-                  <span className="block font-medium tracking-tight">
-                    {SITE.contact.cabinetPhoneDisplay}
-                  </span>
-                </span>
-              </a>
-              <a
+                icon={<Phone />}
+                iconClassName="bg-green"
+                title="Cabinet"
+                detail={SITE.contact.cabinetPhoneDisplay}
+                ariaLabel={`Appeler le cabinet au ${SITE.contact.cabinetPhoneDisplay}`}
+              />
+              <Row
                 href={`tel:${SITE.contact.drPhoneTel}`}
-                className="glass flex items-center gap-4 rounded-2xl p-5 transition-colors hover:bg-white/10"
-              >
-                <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-teal/20 text-teal-light">
-                  <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 rounded-full bg-teal">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal opacity-75" />
-                  </span>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M6.6 10.8a13.4 13.4 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24c1.1.36 2.3.56 3.5.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.3a1 1 0 0 1 1 1c0 1.2.2 2.4.56 3.5a1 1 0 0 1-.24 1l-2.2 2.3Z" />
-                  </svg>
-                </span>
-                <span>
-                  <span className="block text-xs text-white/55">Urgence 24h/24</span>
-                  <span className="block font-medium tracking-tight">
-                    {SITE.contact.drPhoneDisplay}
-                  </span>
-                </span>
-              </a>
-            </div>
+                icon={<MedicalCase />}
+                iconClassName="bg-red-fill"
+                title="Urgences 24h/24"
+                detail={SITE.contact.drPhoneDisplay}
+                ariaLabel={`Appeler les urgences au ${SITE.contact.drPhoneDisplay}`}
+              />
+              <Row
+                href={`https://wa.me/${SITE.contact.whatsapp}`}
+                external
+                icon={<Message />}
+                iconClassName="bg-[#25d366]"
+                title="WhatsApp"
+                detail="Écrire au cabinet"
+                ariaLabel="Écrire au cabinet sur WhatsApp (nouvelle fenêtre)"
+              />
+            </InsetGroup>
 
-            <div className="glass rounded-2xl p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-light/80">
-                Horaires
-              </h3>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {SITE.hours.items.map((h) => (
-                  <li key={h.days} className="flex items-center justify-between gap-4">
-                    <span className="text-white/65">{h.days}</span>
-                    <span className="font-medium tabular-nums">{h.time}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 border-t border-white/10 pt-3 text-sm text-teal-light">
-                {SITE.hours.emergency}
-              </p>
-            </div>
+            <InsetGroup
+              title="Horaires"
+              accessory={<OpenStatus />}
+              footer={SITE.hours.emergency}
+            >
+              {SITE.hours.items.map((h) => {
+                const isToday = h.days.includes(today);
+                return (
+                  <Row
+                    key={h.label}
+                    title={
+                      <span className={cn(isToday && "font-semibold")}>
+                        {h.label}
+                        {isToday && <span className="sr-only"> (aujourd&apos;hui)</span>}
+                      </span>
+                    }
+                    trailing={
+                      <span
+                        className={cn(
+                          "text-body tabular-nums",
+                          isToday ? "font-semibold text-label" : "text-label-secondary",
+                        )}
+                      >
+                        {h.time}
+                      </span>
+                    }
+                  />
+                );
+              })}
+            </InsetGroup>
 
-            <ContactMap />
+            <InsetGroup title="Accès">
+              <li className="block">
+                <iframe
+                  title="Localisation du cabinet — Boulevard Sahl Rhône, Témara"
+                  src={mapEmbed}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="block h-[240px] w-full border-0 dark:brightness-[0.85]"
+                />
+              </li>
+              <Row
+                href={SITE.contact.mapsUrl}
+                external
+                icon={<MapPin />}
+                iconClassName="bg-[#0a84ff]"
+                title="Itinéraire"
+                detail={`${SITE.contact.addressLine} · ${SITE.contact.city}`}
+                ariaLabel="Itinéraire vers le cabinet dans Google Maps (nouvelle fenêtre)"
+              />
+            </InsetGroup>
           </div>
         </div>
-      </div>
-    </section>
+      </Container>
+    </Section>
+  );
+}
+
+/** Indicateur d'activité à huit rayons, aux couleurs du libellé du bouton. */
+function ActivityIndicator() {
+  return (
+    <svg viewBox="0 0 24 24" className="activity-indicator h-5 w-5" aria-hidden="true">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <line
+          key={i}
+          x1="12"
+          y1="3"
+          x2="12"
+          y2="7"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          opacity={0.25 + (i / 8) * 0.75}
+          transform={`rotate(${i * 45} 12 12)`}
+        />
+      ))}
+    </svg>
   );
 }

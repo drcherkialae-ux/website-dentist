@@ -1,66 +1,119 @@
-import Reveal from "@/components/motion/Reveal";
+"use client";
+
+import { useRef, useState, type KeyboardEvent } from "react";
+import { Container, Section, SectionHeader } from "@/components/ui/Section";
 import { SITE } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
-function Stars() {
-  return (
-    <div className="flex gap-0.5 text-teal" aria-label="5 sur 5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="m12 17.3-6.18 3.7 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.46 4.73L18.18 21z" />
-        </svg>
-      ))}
-    </div>
-  );
-}
+const quote = (text: string) => `« ${text} »`;
 
+/**
+ * Avis : un seul avis lisible à la fois, choisi dans l'index des patients
+ * (onglets, flèches du clavier). Tous les avis restent dans la page ; ils
+ * sont superposés dans la même cellule, donc changer d'avis ne décale rien.
+ */
 export default function Testimonials() {
-  return (
-    <section id="avis" className="relative overflow-hidden bg-mist py-24 md:py-32">
-      <div className="mx-auto w-full max-w-7xl px-5 md:px-10">
-        <div className="max-w-2xl">
-          <Reveal>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-teal">
-              Avis patients
-            </p>
-          </Reveal>
-          <Reveal delay={0.05}>
-            <h2 className="font-display mt-4 text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl lg:text-[2.9rem]">
-              Ils nous confient leur sourire.
-            </h2>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="mt-5 text-base leading-relaxed text-ink/60">
-              Recommandé par ses patients à Témara, Rabat et alentours.
-            </p>
-          </Reveal>
-        </div>
+  const reviews = SITE.reviews;
+  const [index, setIndex] = useState(() => Math.max(0, reviews.findIndex((r) => r.featured)));
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
 
-        <div className="mt-14 columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
-          {SITE.reviews.map((r, i) => (
-            <Reveal key={r.name} delay={(i % 3) * 0.08} className="break-inside-avoid">
-              <figure className="rounded-3xl bg-white p-7 shadow-soft ring-1 ring-ink/5">
-                <Stars />
-                <blockquote className="mt-4 text-[15px] leading-relaxed text-ink/75">
-                  « {r.text} »
-                </blockquote>
-                <figcaption className="mt-6 flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-navy to-teal text-sm font-semibold text-white">
-                    {r.name.charAt(0)}
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-ink">
-                      {r.name}
-                    </span>
-                    <span className="block text-xs text-ink/50">
-                      {r.city} · {r.service}
-                    </span>
-                  </span>
-                </figcaption>
-              </figure>
-            </Reveal>
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const last = reviews.length - 1;
+    const next =
+      e.key === "ArrowDown" || e.key === "ArrowRight"
+        ? index === last ? 0 : index + 1
+        : e.key === "ArrowUp" || e.key === "ArrowLeft"
+          ? index === 0 ? last : index - 1
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? last
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    setIndex(next);
+    tabs.current[next]?.focus();
+  };
+
+  return (
+    <Section id="avis" tone="grouped" labelledBy="avis-title">
+      <Container className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr] lg:gap-x-20 lg:gap-y-12">
+        <SectionHeader
+          id="avis-title"
+          eyebrow="Avis patients"
+          title="Ils nous confient leur sourire."
+          intro="Recommandé par ses patients à Témara, Rabat et alentours."
+          className="lg:col-start-1 lg:row-start-1"
+        />
+
+        {/* Avis affiché (au-dessus de l'index sur téléphone, à droite sur ordinateur) */}
+        <div
+          id="avis-panneau"
+          role="tabpanel"
+          aria-labelledby={`avis-onglet-${index}`}
+          className="grid lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-center"
+        >
+          {reviews.map((r, i) => (
+            <figure
+              key={r.name}
+              aria-hidden={i !== index}
+              className={cn(
+                "[grid-area:1/1] transition-[opacity,filter,visibility] duration-300 ease-out",
+                i === index ? "visible opacity-100 blur-0" : "invisible opacity-0 blur-[3px]",
+              )}
+            >
+              <blockquote className="font-display text-title1 font-normal text-label lg:text-display">
+                {quote(r.text)}
+              </blockquote>
+              <figcaption className="mt-5 text-subheadline text-label-secondary">
+                <span className="font-semibold text-label">{r.name}</span> · {r.city} ·{" "}
+                {r.service}
+              </figcaption>
+            </figure>
           ))}
         </div>
-      </div>
-    </section>
+
+        <div
+          role="tablist"
+          aria-label="Choisir un avis"
+          aria-orientation="vertical"
+          onKeyDown={onKeyDown}
+          className="border-t border-separator lg:col-start-1 lg:row-start-2"
+        >
+          {reviews.map((r, i) => {
+            const selected = i === index;
+            return (
+              <button
+                key={r.name}
+                ref={(el) => {
+                  tabs.current[i] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`avis-onglet-${i}`}
+                aria-selected={selected}
+                aria-controls="avis-panneau"
+                tabIndex={selected ? 0 : -1}
+                onClick={() => setIndex(i)}
+                className={cn(
+                  "group flex min-h-12 w-full items-center gap-3 border-b border-separator py-3 text-left transition-colors duration-200 [-webkit-tap-highlight-color:transparent]",
+                  selected ? "text-label" : "text-label-secondary hover:text-label",
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "h-px w-6 origin-left bg-current transition-[scale] duration-300 ease-out",
+                    selected ? "scale-x-100" : "scale-x-0",
+                  )}
+                />
+                <span className={cn("flex-1 text-body", selected && "font-semibold")}>{r.name}</span>
+                <span className="text-footnote text-label-secondary">{r.service}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Container>
+    </Section>
   );
 }

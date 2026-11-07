@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Dev uniquement : laisse un iPhone du même Wi-Fi charger le site
+  // (http://192.168.1.27:3123). Sans effet sur l'export statique.
+  allowedDevOrigins: ["192.168.1.27"],
 };
 
 export default nextConfig;
